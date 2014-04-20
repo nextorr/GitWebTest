@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>media element player testing</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script type="text/javascript" src="../Scripts/mediaelement/mediaelement-and-player.min.js"></script>
+    <link href="../Scripts/mediaelement/mediaelementplayer.min.css" rel="stylesheet"
+        type="text/css" />
+    <link href="../Scripts/mediaelement/mejs-skins.css" rel="stylesheet" />
+
+    
+</head>
+<body>
+<video  src="https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" width="720" height="406" poster="http://video-js.zencoder.com/oceans-clip.png" controls="controls" preload="none">
+ </video>
+
+
+<script>
+    $('audio,video').mediaelementplayer({
+        success: function (player, node) {
+            $('#' + node.id + '-mode').html('mode: ' + player.pluginType);
+        }
+    });
+
+</script>
+</body>
+</html>
