@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>video API testing</title>
+
+</head>
+
+<body>
+<video id="player" src="https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" width="720" height="406" poster="http://video-js.zencoder.com/oceans-clip.png" controls="controls" preload="none">
+</video>
+
+<!--to visualize testing results-->
+<p id="output">
+</p>
+<p id="timeInterval">
+</p>
+
+    <script type="text/javascript">
+        setInterval("updateTime()", 15);
+        var player = document.getElementById("player");
+        player.addEventListener("timeupdate", function (e) {
+            document.getElementById("output").innerHTML = player.currentTime;
+        });
+        function updateTime() {
+            document.getElementById("timeInterval").innerHTML = player.currentTime;
+        }
+    </script>
+
+</body>
+</html>

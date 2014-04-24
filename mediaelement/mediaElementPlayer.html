@@ -3,8 +3,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>media element player testing</title>
+
+    <!--reset the borders / padding defaults from browsers.-->
+    <style type="text/css">
+    body{
+        margin: 0;
+        padding: 0
+    }
+    </style>
+
     <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
     <script type="text/javascript" src="../Scripts/mediaelement/mediaelement-and-player.min.js"></script>
+    <script src="../Scripts/movi/Utility.js" type="text/javascript"></script>
     <link href="../Scripts/mediaelement/mediaelementplayer.min.css" rel="stylesheet"
         type="text/css" />
     <link href="../Scripts/mediaelement/mejs-skins.css" rel="stylesheet" />
@@ -12,17 +22,163 @@
     
 </head>
 <body>
-<video  src="https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" width="720" height="406" poster="http://video-js.zencoder.com/oceans-clip.png" controls="controls" preload="none">
- </video>
+    <video id="player" src="'https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" width="720" height="406" poster="http://video-js.zencoder.com/oceans-clip.png" controls="controls" preload="none">
+    </video>
+
+    <svg width="720" height="370" id="svgRoot" onclick="clickHandler('empty space', event)" xmlns="http://www.w3.org/2000/svg" style="; position: absolute; left: 0px; top: 0px; border:2px solid #a1a1a1;"> 
+        
+    </svg>
+
+    <!--this div is for testing-->
+    <p id="output">
+    </p>
+    <p id="timeInterval">
+    </p>
+
+    <script type="text/javascript">
+
+        var moviPlayer = new MediaElementPlayer('#player', {
+            success: function (player, node) {
+                $('#' + node.id + '-mode').html('mode: ' + player.pluginType);
+                player.addEventListener("timeupdate", function (e) {
+                    document.getElementById("output").innerHTML = player.currentTime;
+                });
+                setInterval(function () {
+                    if (!player.paused) {
+                        document.getElementById("timeInterval").innerHTML = player.currentTime;
+                        if (trackDataReady != false) {
+                            for (var i = 0; i < trackData.length; i++) {
+                                //trackData[i].render(counterX);
+                                trackData[i].render(player.currentTime);
+                            }
+                        }
+                    }
+                }, 15);
+
+            }
+        });
+
+    </script>
+
+    <script type="text/javascript">
+        var alpha = 0;
+        var trackData;
+        var trackDataReady = false;
+        var manager;
+        var videoQuery
+        //TODO: marked for deletion
+        var rectangles = [];
+        //this is a default value, later is changed if a proper communication is established
+        var developerApiHost = "http://localhost/";
 
 
-<script>
-    $('audio,video').mediaelementplayer({
-        success: function (player, node) {
-            $('#' + node.id + '-mode').html('mode: ' + player.pluginType);
+        //subscribe to the sessionReady event
+        $(document).on("sessionReady", sessionHandler);
+
+        //subscribe to the track area ready event
+        $(document).on("trackAreaReady", trackHandler);
+
+        //subscribe to the area Visible event, this one is triggered
+        //when an area becomes visible.
+        $(document).on("areaVisible", areaVisibleHandler);
+
+        function sessionHandler(e) {
+            //TODO: set the video Url an auto play it when we receive the url
+            //if the browsers obey the execution order this must exectute after YT api is ready
+            //however we must make sure of it
+            var time = 0;
+
+            if (videoQuery["t"] != undefined) {
+                time = videoQuery["t"];
+            }
+
+            moviPlayer.setSrc('https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D');
+            //moviPlayer.play();
+
+//            twitter support
+//            var internalList = new Object();
+//            for (var i = 0; i < e.message.twitterList.length; i++) {
+//                internalList[e.message.twitterList[i]] = e.message.trackAreaTokens[i];
+//            }
+
+//            parent.postMessage({ moviType: "tweetListReady", tweetList: internalList }, developerApiHost);
+
+            //TODO: are we sure this is called AFTER the player loads?
+            //how to check that?
+            //player.loadVideoByUrl("http://www.youtube.com/v/"+e.message+"?version=3");
         }
-    });
 
-</script>
+        function trackHandler(e) {
+            trackData = e.message;
+            trackDataReady = true;
+        }
+
+        function areaVisibleHandler(e) {
+            parent.postMessage({ moviType: "areaVisible", tweetList: e.message }, developerApiHost);
+        }
+
+        //TODO: implement the query string system
+        // rigth now the database is quering against the youtube ID
+        //which seem right to integrate
+        //however we must support the traditional query system.
+        //we have designed idx to indicate a youtube video ID
+        window.onload = function () {
+            videoQuery = queryString(window.location.search.substr(1).split('&'));
+            manager = moviCommunicationManager(document.getElementById('svgRoot'));
+
+            if (videoQuery["id"] != undefined) {
+                manager.getLogInSession(videoQuery["id"]);
+            }
+            else if (videoQuery["idx"] != undefined) {
+                manager.getLogInSession(videoQuery["idx"]);
+            }
+            else {
+                manager.getLogInSession("wP");
+            }
+
+            //getLogInSession("qR");
+            //rectangles.push(new trackingRectangle(document.getElementById('svgRoot')));
+            //LEFT HERE: create the event architecture, or check for flags on the engine
+        }
+
+        //Testing cross domain messaging using postMessage API
+        window.addEventListener("message", receiveMessage, false);
+
+        //YouTube itself uses this event, so try no to interfere
+        //any error or interruption here breaks up the youtube API
+        function receiveMessage(event) {
+            if (event.origin != "https://www.youtube.com") {
+                //here we accept calls from everywhere except youtube
+                document.getElementById("callerSource").innerHTML = event.origin;
+                document.getElementById("callerSource").innerHTML += "  " + event.data;
+                switch (event.data.moviType) {
+                    case "startSession":
+                        developerApiHost = event.origin;
+                        break;
+                }
+
+                if (event.origin == developerApiHost) {
+                    switch (event.data.moviType) {
+                        case "getTime":
+                            event.source.postMessage({ moviType: "timeUpdate", time: moviPlayer.currentTime}, event.origin);
+                            break;
+                        case "createTrackArea":
+                            break;
+                        case "areaVisibility":
+                            break;
+                        case "startSession":
+                            developerApiHost = event.origin;
+                            break;
+                    }
+                }
+            } else {
+                if (event.data.substring(10, 22) != "infoDelivery") {
+                    document.getElementById("callerSource").innerHTML = event.data;
+                }
+            }
+        }
+
+    </script>
+
 </body>
 </html>
