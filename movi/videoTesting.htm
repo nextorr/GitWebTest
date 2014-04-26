@@ -74,7 +74,7 @@
             else {
                 if (videoContainer.requestFullscreen) videoContainer.requestFullscreen();
                 else if (videoContainer.mozRequestFullScreen) videoContainer.mozRequestFullScreen();
-                else if (videoContainer.webkitRequestFullScreen) video.webkitRequestFullScreen();
+                else if (videoContainer.webkitRequestFullScreen) videoContainer.webkitRequestFullScreen();
                 else if (videoContainer.msRequestFullscreen) videoContainer.msRequestFullscreen();
                 setFullscreenData(true);
             }
