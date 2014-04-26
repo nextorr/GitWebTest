@@ -3,12 +3,38 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>video API testing</title>
-
+    <style type="text/css">
+    body{
+        margin: 0;
+        padding: 0
+    }
+    </style>
+    <style type="text/css">
+        div[data-fullscreen=true]
+        {
+        	max-height:100%;
+        	max-width:100%;
+        	width:100%;
+        	margin:0;
+        	padding:0;
+        }
+        div[data-fullscreen=true] video 
+        {
+        	width:100%;
+        }
+    </style>
 </head>
 
 <body>
-<video id="player" src="https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" width="720" height="406" poster="http://video-js.zencoder.com/oceans-clip.png" controls="controls" preload="none">
-</video>
+<div id="moviContainer" onclick="clickHandler('empty space', event)" data-fullscreen="false" width="720" height="406">
+    
+    <video id="player" src="https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" poster="http://video-js.zencoder.com/oceans-clip.png" preload="none" controls="controls">
+
+    </video>
+    
+    <svg width="200" height="200" id="svgRoot" onclick="clickHandler('from Rectangle!!', event)" xmlns="http://www.w3.org/2000/svg" style="; position: absolute; left: 0px; top: 0px; border:2px solid #a1a1a1;"> 
+    </svg>
+</div>
 
 <!--to visualize testing results-->
 <p id="output">
@@ -19,12 +45,44 @@
     <script type="text/javascript">
         setInterval("updateTime()", 15);
         var player = document.getElementById("player");
+        var videoContainer = document.getElementById("moviContainer");
         player.addEventListener("timeupdate", function (e) {
             document.getElementById("output").innerHTML = player.currentTime;
         });
         function updateTime() {
             document.getElementById("timeInterval").innerHTML = player.currentTime;
         }
+
+        function clickHandler(text, event) {
+            alert("I am an alert box!" + " from " + text + " Xpos " + event.pageX.toString());
+            player.play();
+            handleFullscreen();
+        }
+
+        var isFullScreen = function () {
+            return !!(document.fullScreen || document.webkitIsFullScreen || document.mozFullScreen || document.msFullscreenElement || document.fullscreenElement);
+        }
+
+        var handleFullscreen = function () {
+            if (isFullScreen()) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+                else if (document.webkitCancelFullScreen) document.webkitCancelFullScreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
+                setFullscreenData(false);
+            }
+            else {
+                if (videoContainer.requestFullscreen) videoContainer.requestFullscreen();
+                else if (videoContainer.mozRequestFullScreen) videoContainer.mozRequestFullScreen();
+                else if (videoContainer.webkitRequestFullScreen) video.webkitRequestFullScreen();
+                else if (videoContainer.msRequestFullscreen) videoContainer.msRequestFullscreen();
+                setFullscreenData(true);
+            }
+        }
+        var setFullscreenData = function (state) {
+            videoContainer.setAttribute('data-fullscreen', !!state);
+        }
+
     </script>
 
 </body>
