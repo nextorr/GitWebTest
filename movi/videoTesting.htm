@@ -26,18 +26,18 @@
 </head>
 
 <body>
-<div id="moviContainer" onclick="clickHandler('empty space', event)" data-fullscreen="false" width="720" height="406">
+<div id="moviContainer" onclick="clickHandler('empty space', event)" data-fullscreen="false" width="720" height="406" style="border:2px solid #a1a1a1;">
     
     <video id="player" src="https://movistore.blob.core.windows.net/asset-b4bb72bd-d073-440a-a063-4a18e531cf07/max_H264_4500kbps_AAC_und_ch2_128kbps.mp4?sv=2012-02-12&st=2014-04-19T19%3A48%3A58Z&se=2016-04-18T19%3A48%3A58Z&sr=c&si=3192253d-d337-4bcf-a2e0-8d46b352efbe&sig=4QrgAkr%2Bk9amsacx2TxqZbeh5%2BVUwhghWSDc7iuR2QQ%3D" poster="http://video-js.zencoder.com/oceans-clip.png" preload="none" controls="controls">
 
     </video>
-    
-    <svg width="200" height="200" id="svgRoot" onclick="clickHandler('from Rectangle!!', event)" xmlns="http://www.w3.org/2000/svg" style="; position: absolute; left: 0px; top: 0px; border:2px solid #a1a1a1;"> 
+    <!--for some reason in firefox we need to use "evt" instead of "event" as the argument of the onclick handler-->
+    <svg width="200" height="200" id="svgRoot" onclick="clickHandlerBox('from Rectangle!!', evt)" xmlns="http://www.w3.org/2000/svg" style="; position: absolute; left: 0px; top: 0px; border:2px solid #a1a1a1;"> 
     </svg>
 </div>
 
 <!--to visualize testing results-->
-<p id="output">
+<p id="output" onclick="handleFullscreen()">
 </p>
 <p id="timeInterval">
 </p>
@@ -54,9 +54,13 @@
         }
 
         function clickHandler(text, event) {
-            alert("I am an alert box!" + " from " + text + " Xpos " + event.pageX.toString());
-            player.play();
-            handleFullscreen();
+            alert("I am an alert box!" + " from " + text + " Xpos " + event.pageX.toString() + "Source: "+ event.target.id);
+            
+            //player.play();
+        }
+        function clickHandlerBox(text, event) {
+            alert("I am an alert box!" + " from " + text + " Xpos " + event.pageX.toString() + "Source: " + event.target.id);
+            event.stopPropagation();
         }
 
         var isFullScreen = function () {

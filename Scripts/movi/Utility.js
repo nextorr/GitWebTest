@@ -103,18 +103,28 @@ function Visualization(_moviAd, _index, parentSVG, _tweetList) {
     this.index = _index;
     this.tweetList = _tweetList;
     this.rectangle = new trackingRectangle(parentSVG, this.moviAd.link);
-    this.render = function (time) {
+    this.render = function (time, offset) {
         var innerIndex = binaryIndexOf.call(this.moviAd.trackData.timeLine, time);
         if ((time < this.moviAd.trackData.timeLine[0] || time > this.moviAd.trackData.timeLine[this.moviAd.trackData.timeLine.length - 1])) {
             //the asked time is outside the timeLine definition, hide the rectangle
             this.rectangle.collapse();
         }
-        else {
-            //draw the position
+        else if (offset == null) {
+            //draw the position without any offset
             if (innerIndex < 0) {
                 this.rectangle.draw(this.moviAd.trackData.Xtl[-innerIndex], this.moviAd.trackData.Xbr[-innerIndex], this.moviAd.trackData.Ytl[-innerIndex], this.moviAd.trackData.Ybr[-innerIndex]);
             } else {
                 this.rectangle.draw(this.moviAd.trackData.Xtl[innerIndex], this.moviAd.trackData.Xbr[innerIndex], this.moviAd.trackData.Ytl[innerIndex], this.moviAd.trackData.Ybr[innerIndex]);
+            }
+            this.rectangle.visible(this.tweetList);
+        }
+        else {
+            //draw the position applying the offset
+            //TODO: this only works on the standard wide screen ratio
+            if (innerIndex < 0) {
+                this.rectangle.draw(this.moviAd.trackData.Xtl[-innerIndex] * offset, this.moviAd.trackData.Xbr[-innerIndex] * offset, this.moviAd.trackData.Ytl[-innerIndex] * offset, this.moviAd.trackData.Ybr[-innerIndex] * offset);
+            } else {
+                this.rectangle.draw(this.moviAd.trackData.Xtl[innerIndex] * offset, this.moviAd.trackData.Xbr[innerIndex] * offset, this.moviAd.trackData.Ytl[innerIndex] * offset, this.moviAd.trackData.Ybr[innerIndex] * offset);
             }
             this.rectangle.visible(this.tweetList);
         }
