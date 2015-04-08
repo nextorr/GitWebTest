@@ -144,7 +144,7 @@ function moviCommunicationManager(parentSVG) {
 
     function getLogInSession(queryToken) {
         $.ajax({
-            url: "http://110e406bd5cd4f278d8ad68d53407a71.cloudapp.net/moviData.svc/web/getLogInViewerSession",
+            url: "http://b4eed5aea5214e2a96dc95f537de6d55.cloudapp.net/moviData.svc/web/getLogInViewerSession",
             type: "POST",
             cache: false,
             //CARE: the parameter name MUST match the parameter definition on wcf
