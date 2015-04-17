@@ -37,7 +37,7 @@ function queryString(a) {
 }
 
 
-function trackingRectangle(parentSVG, URL) {
+function trackingRectangle(parentSVG, URL, _title, _text, _image, _startTime) {
     var domNode = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     parentSVG.appendChild(domNode);
 
@@ -51,7 +51,18 @@ function trackingRectangle(parentSVG, URL) {
     domNode.setAttribute("stroke-width", "2");
     domNode.setAttribute("visibility", "visible");
     domNode.onmousedown = function (event) {
-        window.open(URL, "_blank");
+        //uncomment this to allow links on the trackArea
+        //window.open(URL, "_blank");
+        $.event.trigger({
+            type: "trackAreaClicked",
+            message: {
+                title: _title,
+                text: _text,
+                image: _image,
+                link: URL,
+                startTime: _startTime
+            }
+        });
     };
 
     function draw(Xtl, Xbr, Ytl, Ybr) {
@@ -102,7 +113,7 @@ function Visualization(_moviAd, _index, parentSVG, _tweetList) {
     this.moviAd = _moviAd;
     this.index = _index;
     this.tweetList = _tweetList;
-    this.rectangle = new trackingRectangle(parentSVG, this.moviAd.link);
+    this.rectangle = new trackingRectangle(parentSVG, this.moviAd.link, this.moviAd.title, this.moviAd.text, this.moviAd.image, this.moviAd.trackData.timeLine[0]);
     this.render = function (time, offset) {
         var innerIndex = binaryIndexOf.call(this.moviAd.trackData.timeLine, time);
         if ((time < this.moviAd.trackData.timeLine[0] || time > this.moviAd.trackData.timeLine[this.moviAd.trackData.timeLine.length - 1])) {
@@ -144,7 +155,7 @@ function moviCommunicationManager(parentSVG) {
 
     function getLogInSession(queryToken) {
         $.ajax({
-            url: "http://b4eed5aea5214e2a96dc95f537de6d55.cloudapp.net/moviData.svc/web/getLogInViewerSession",
+            url: "http://b4eed5aea5214e2a96dc95f537de6d55.cloudapp.net/moviData.svc/web/getLogInViewerSessionYT",
             type: "POST",
             cache: false,
             //CARE: the parameter name MUST match the parameter definition on wcf
@@ -163,7 +174,8 @@ function moviCommunicationManager(parentSVG) {
                     type: "sessionReady",
                     //use this when the video url is expected from the service
                     //message: _responseWCF.url
-                    message: { videoURL: _responseWCF.url,
+                    message: {
+                        videoURL: queryToken,
                         trackAreaTokens: _responseWCF.trackAreas,
                         twitterList: _responseWCF.twitterIds
                     }

@@ -1,0 +1,330 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>movi Youtube Player</title>
+
+    <!--reset the borders / padding.-->
+    <style type="text/css">
+        body {
+            margin: 0;
+            padding: 0;
+            
+        }
+    </style>
+
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
+    <link rel="stylesheet" href="../Styles/accordion.css">
+    <script type="text/javascript">
+        //event to get the click evento from the video (actually the SVG on top of the video)
+    //TODO: move this code to Utility.js?
+        function myFunction(text, event) {
+            parent.postMessage({ moviType: "onclick", Xpos: event.pageX, Ypos: event.pageY, time: player.getCurrentTime() }, developerApiHost);
+
+            //parent.postMessage("Xpos" + event.pageX.toString(), "http://moviserver.cloudapp.net/");
+            //alert("I am an alert box!" + " from " + text + " Xpos " + event.pageX.toString());
+            //alert("absolute position " + document.getElementById("player").getBoundingClientRect());
+        }
+    </script>
+
+    <script type="text/javascript">
+    //TODO:marked for deletion
+        var responseWCF;
+
+    //LOADING THE YOUTUBE API
+    // 2. This code loads the IFrame Player API code asynchronously.
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // 3. This function creates an <iframe> (and YouTube player)
+    //    after the API code downloads.
+    var player;
+    var youtubeApiReady = false;
+    //the height size includes the player controls
+    function onYouTubeIframeAPIReady() {
+
+        //this sets up the "render" engine, the function gets called
+        //every 0.017 sec
+        youtubeApiReady = true;
+        window.setInterval("updatePlayerInfo()", 17);
+    }
+
+    // Display information about the current state of the player
+    var counterX = 0.0;
+    function updatePlayerInfo() {
+        // Also check that at least one function exists since when IE unloads the
+        // page, it will destroy the SWF before clearing the interval.
+
+        //TODO: look on the YT doc if there is a way to get a faster o finer resolution time.
+        //Possible state values are unstarted (-1), ended (0), playing (1), paused (2), buffering (3), video cued (5).
+        if (player && player.getDuration && player.getPlayerState() == 1) {
+            //document.getElementById("playerTime").innerHTML = "llllllllllllllllll" + counterX.toString();
+            counterX = counterX + 0.017;
+            //document.getElementById("playerTime").innerHTML = player.getCurrentTime();
+            if (trackDataReady != false) {
+                for (var i = 0; i < trackData.length; i++) {
+                    //trackData[i].render(counterX);
+                    trackData[i].render(player.getCurrentTime());
+                }
+            }
+            // updateHTML("videoCurrentTime", player.getCurrentTime());
+        }
+    }
+
+    // 4. The API will call this function when the video player is ready.
+    function onPlayerReady(event) {
+        event.target.playVideo();
+    }
+
+    // 5. The API calls this function when the player's state changes.
+    //    The function indicates that when playing a video (state=1),
+    //    the player should play for six seconds and then stop.
+    var done = false;
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING && !done) {
+            //setTimeout(stopVideo, 10000);
+            done = true;
+        }
+    }
+    function stopVideo() {
+        player.stopVideo();
+    }
+    </script>
+
+    <script type="text/javascript">
+        var alpha = 0;
+        var trackData;
+        var trackDataReady = false;
+        var manager;
+        var videoQuery
+        //TODO: marked for deletion
+        var rectangles = [];
+        //this is a default value, later is changed if a proper communication is established
+        var developerApiHost = "http://localhost/";
+
+
+        //subscribe to the sessionReady event
+        $(document).on("sessionReady", sessionHandler);
+
+        //subscribe to the track area ready event
+        $(document).on("trackAreaReady", trackHandler);
+
+        //subscribe to the area Visible event, this one is triggered
+        //when an area becomes visible.
+        $(document).on("areaVisible", areaVisibleHandler);
+
+        function sessionHandler(e) {
+            //TODO: set the video Url an auto play it when we receive the url
+            //if the browsers obey the execution order this must exectute after YT api is ready
+            //however we must make sure of it
+            var time = 0;
+
+            if (videoQuery["t"] != undefined) {
+                time = videoQuery["t"];
+            }
+            player = new YT.Player('player', {
+                height: '408',
+                width: '720',
+                videoId: e.message.videoURL,
+                playerVars: { wmode: "opaque", start: time},
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+
+            var internalList = new Object();
+            for (var i = 0; i < e.message.twitterList.length; i++) {
+                internalList[e.message.twitterList[i]] = e.message.trackAreaTokens[i];
+            }
+
+            parent.postMessage({ moviType: "tweetListReady", tweetList: internalList }, developerApiHost);
+
+            //TODO: are we sure this is called AFTER the player loads?
+            //how to check that?
+            //player.loadVideoByUrl("http://www.youtube.com/v/"+e.message+"?version=3");
+        }
+
+        function trackHandler(e) {
+            trackData = e.message;
+            trackDataReady = true;
+        }
+
+        function areaVisibleHandler(e) {
+            parent.postMessage({ moviType: "areaVisible", tweetList: e.message }, developerApiHost);
+        }
+
+        //TODO: implement the query string system
+        // rigth now the database is quering against the youtube ID
+        //which seem right to integrate
+        //however we must support the traditional query system.
+        //we have designed idx to indicate a youtube video ID
+        window.onload = function () {
+            videoQuery = queryString(window.location.search.substr(1).split('&'));
+            manager = moviCommunicationManager(document.getElementById('svgRoot'));
+
+            if (videoQuery["id"] != undefined) {
+                manager.getLogInSession(videoQuery["id"]);
+            }
+            else if (videoQuery["idx"] != undefined) {
+                manager.getLogInSession(videoQuery["idx"]);
+            }
+            else {
+                manager.getLogInSession("O_9HWL3cCPY");
+            }
+
+            //getLogInSession("qR");
+            //rectangles.push(new trackingRectangle(document.getElementById('svgRoot')));
+            //LEFT HERE: create the event architecture, or check for flags on the engine
+        }
+
+        //Testing cross domain messaging using postMessage API
+        window.addEventListener("message", receiveMessage, false);
+
+        //YouTube itself uses this event, so try no to interfere
+        //any error or interruption here breaks up the youtube API
+        function receiveMessage(event) {
+            if (event.origin != "https://www.youtube.com") {
+                //here we accept calls from everywhere except youtube
+                //document.getElementById("callerSource").innerHTML = event.origin;
+                //document.getElementById("callerSource").innerHTML += "  " + event.data;
+                switch (event.data.moviType) {
+                    case "startSession":
+                        developerApiHost = event.origin;
+                        break;
+                }
+
+                if (event.origin == developerApiHost) {
+                    switch (event.data.moviType) {
+                        case "getTime":
+                            event.source.postMessage({ moviType: "timeUpdate", time: player.getCurrentTime() }, event.origin);
+                            break;
+                        case "createTrackArea":
+                            break;
+                        case "areaVisibility":
+                            break;
+                        case "startSession":
+                            developerApiHost = event.origin;
+                            break;
+                    }
+                }
+            } else {
+                if (event.data.substring(10,22) != "infoDelivery" ) {
+                    //document.getElementById("callerSource").innerHTML = event.data;
+                }
+            }
+        }
+
+    </script>
+
+    <!--this script controls the accordion behaviour-->
+    <script type="text/javascript">
+    var trackingAds;
+    //subscribe to the sessionReady event
+    $(document).on("trackAreaClicked", setMoviAd2);
+
+    $(document).ready(function () {
+        $('#accordion-js').find('h2').click(function () {
+            $(this).next().slideToggle();
+        }).next().hide();
+    });
+
+    //this funciton only sets title and content, and its used for testing
+    function setMoviAd2(e) {
+        var imageSrc = "data:image/jpg;base64," + btoa(bin2String(e.message.image));
+        $('#accordion-js').prepend('<h2>' + e.message.title + '</h2><div><a target="_blank" href="' + e.message.link + '"><img onclick="pauseVideo()" src="' + imageSrc + '" /></a><p onclick="seekVideo('+e.message.startTime +')">' + e.message.text + '</p></div>');
+        $('#accordion-js').find('h2').first().click(function () { $(this).next().slideToggle(); }).next().hide();
+        
+    }
+
+    function seekVideo(time) {
+        player.seekTo(time, true);
+    }
+
+    function pauseVideo() {
+        player.pauseVideo();
+    }
+
+    function setMoviAd(title, content, image) {
+        var imageSrc = "data:image/jpg;base64," + btoa(bin2String(trackingAds.image));
+        $('#accordion-js').prepend('<h2>' + title + '</h2><div><img src="' + imageSrc + '" /><p>' + content + '</p></div>');
+        $('#accordion-js').find('h2').first().click(function () { $(this).next().slideToggle() }).next().hide();
+    }
+
+    function bin2String(array) {
+        var result = "";
+        for (var i = 0; i < array.length; i++) {
+            result += String.fromCharCode(array[i]);
+        }
+        return result;
+    }
+
+    function getOneTrackAndAds() {
+
+        $.ajax({
+            url: "http://moviserver.cloudapp.net/service1.svc/web/getTrackAndAds",
+            type: "POST",
+            cache: false,
+            //CARE: the parameter name MUST match the parameter definition on wcf
+            data: JSON.stringify({ token: "w8" }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            processData: true,
+            //note: complete responds with data.responseJSON
+            // success responds with data directly
+            success: function (data) {
+                trackingAds = data.d;
+                setMoviAd(trackingAds.title, trackingAds.text, trackingAds.image);
+            },
+            error: function (response) {
+                alert('Failed: ' + response.statusText);
+            }
+        });
+        return trackingAds;
+    }
+
+
+
+    </script>
+
+
+
+</head>
+
+<body>
+    <table class="moviGrid">
+        <tr>
+            <td><div id="player" style="width:720px"></div></td>
+            <td>
+                <div id="accordion-js" class="accordion">
+                    <h2>primer titulo de prueba</h2>
+                    <p>algun parrafo de prueba que contiene los datos necesarios</p>
+                    <h2>segundo titulo de prueba</h2>
+                    <p>este parrafo es el que se muestra dentro de las pruebas de contenido</p>
+                    <h2>tercer titulo de prueba</h2>
+                    <div>
+                        <p>cualquier cosa que este despues del h2 funciona como informacion</p>
+                        <p>de esta forma se puede componer cualquier cosa</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table> 
+
+    <p id="playerTime" style="width: 70px; height: 30px; cursor:pointer; text-decoration: underline; left: 0; display:none;">
+        Launch
+    </p>
+
+    <p id="callerSource" style="width: 70px; height: 30px; cursor:pointer; text-decoration: underline; left: 0; display:none;">
+        Launch
+    </p>
+
+    <svg width="716" height="370" id="svgRoot" onclick="myFunction('empty space', event)" xmlns="http://www.w3.org/2000/svg" style="; position: absolute; left: 0px; top: 0px; border:2px solid #a1a1a1;">
+
+    </svg>
+    
+
+</body>
+</html>

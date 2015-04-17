@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>acordion menu</title>
+    <style type="text/css" >
+        
+        div {
+	        padding: 12px;
+	        width: 400px;
+	        background: #fff;
+	        border-radius: 5px;
+	        -webkit-box-shadow: 0 1px 3px rgba(0,0,0,.3);
+	        box-shadow: 0 1px 3px rgba(0,0,0,.3);
+        }
+        p {
+          height:0;
+          padding:0 15px;
+          overflow:hidden;
+          -webkit-transition:height .4s ease-out, padding .4s ease-out;
+          -moz-transition:height .4s ease-out, padding .4s ease-out;
+          -o-transition:height .4s ease-out, padding .4s ease-out;
+          -ms-transition:height .4s ease-out, padding .4s ease-out;
+          transition:height .4s ease-out, padding .4s ease-out;
+        }
+        h1 {
+	        font-size: 1.6em;
+	        font-family: "Perpetua Titling MT";
+	        font-weight: normal;
+        }
+        a {
+          display:block;
+          height:23px;
+          line-height:23px;
+          background:-webkit-gradient(
+            linear, 0 0, 0 100%,
+            from(#eee), to(#ccc)
+          );
+          background:-moz-linear-gradient(#eee, #bbb);
+          background:-o-linear-gradient(#eee, #bbb);
+          background:-ms-linear-gradient(#eee, #bbb);
+          background:linear-gradient(#eee, #bbb);
+          color:#333;
+          text-decoration:none;
+          text-align:center;
+          text-shadow:0 1px 0 rgba(255,255,255,.5);
+          border-bottom:1px solid #aaa;
+        }
+        #intro {
+          border-radius:2px 2px 0 0;
+        }
+        #contact {
+          border-radius:0 0 3px 3px;
+        }
+        a:hover, a:focus {
+          opacity:.9;
+        }
+        a:active {
+          background:-webkit-gradient(
+            linear, 0 0, 0 100%,
+            from(#ccc), to(#ddd)
+          );
+          background:-moz-linear-gradient(#ccc, #ddd);
+          background:-o-linear-gradient(#ccc, #ddd);
+          background:-ms-linear-gradient(#ccc, #ddd);
+          background:linear-gradient(#ccc, #ddd);
+          color:#000;
+        }
+        :target + p {
+          padding:10px 15px;
+          border-bottom:1px solid #ccc;
+        }
+        #intro:target + p {
+          height:70px;
+        }
+        #info:target + p {
+          height:230px;
+        }
+        #contact:target {
+          border-radius:0;
+        }
+        #contact:target + p {
+          height:180px;
+        }
+    </style>
+</head>
+<!--la idea con este metodo es que a cada link se relaciona un segmento de la pagina usando el 
+identificado numeral, este identificador en la url es detectado por CSS usando la pseudo-clase 
+:target y por este metodo se realiza la ampliacion de la informacion.-->
+<body>
+    <div>
+        <section>
+            <a href="#intro" id="intro" a> 
+            <h1>primera seccion</h1>
+            </a>
+            <p>algun contenido <strong>que no sirve</strong> para nada</p>
+        </section>   
+        <section>
+            <a href="#info" id="info"><h1>segunda seccion</h1></a>
+            <p>mas contenido que se sigue ejecutando de alguna manera sin sentido</p>
+        </section>
+        <section>
+            <a href="#contact" id="contact"><h1>tercera seccion</h1></a>
+            <p>para lo ultimo siempre conservamos lo mejor</p>
+        </section>
+    </div>
+
+</body>
+</html>

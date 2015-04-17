@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>accordion sample using jquery</title>
+    <link rel="stylesheet" href="../Styles/accordion.css">
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script src="../Scripts/movi/Utility.js" type="text/javascript"></script>
+</head>
+<body>
+    <div id="accordion-js" class="accordion" >
+        <h2>primer titulo de prueba</h2>
+        <p>algun parrafo de prueba que contiene los datos necesarios</p>
+        <h2>segundo titulo de prueba</h2>
+        <p>este parrafo es el que se muestra dentro de las pruebas de contenido</p>
+        <h2>tercer titulo de prueba</h2>
+        <div>
+            <a href="accordionCSS.html">
+                <img src="http://ts3.mm.bing.net/th?id=JN.eESSIoXW90Eg3HxCMdyF5Q&w=234&h=167&c=7&rs=1&qlt=90&o=4&pid=1.1" alt="HTML tutorial" style="border:0">
+            </a> 
+            <p>cualquier cosa que este despues del h2 funciona como informacion</p>
+            <p>de esta forma se puede componer cualquier cosa</p>
+        </div>
+    </div>
+    
+    <input id="Button1" type="button" value="button" onclick="getOneTrackAndAds()" />
+
+    
+    <a target="_blank" href="accordionCSS.html">
+        <img onclick="hola()" src="http://ts3.mm.bing.net/th?id=JN.eESSIoXW90Eg3HxCMdyF5Q&w=234&h=167&c=7&rs=1&qlt=90&o=4&pid=1.1" alt="HTML tutorial" style="border:0">
+    </a>
+       
+    
+
+    <script type="text/javascript">
+        var trackingAds;
+    $(document).ready(function () {
+        $('#accordion-js').find('h2').click(function () {
+            $(this).next().slideToggle();
+        }).next().hide();
+    });
+
+    function hola() {
+        var title = "contenido agragado desde el codigo";
+        var content = "contenido de prueba para la composicion de texto ademas tenemos que agregar un poco de texto para probar multiparrafo"
+        $('#accordion-js').prepend('<h2>' + title + '</h2><div><p>' + content + '</p></div>');
+        $('#accordion-js').find('h2').first().click(function () { $(this).next().slideToggle() }).next().hide();
+    }
+
+    function setMoviAd(title, content, image) {
+        var imageSrc = "data:image/jpg;base64," + btoa(bin2String(trackingAds.image));
+        $('#accordion-js').prepend('<h2>' + title + '</h2><div><img src="'+imageSrc+'" /><p>' + content + '</p></div>');
+        $('#accordion-js').find('h2').first().click(function () { $(this).next().slideToggle() }).next().hide();
+    }
+
+    function bin2String(array) {
+        var result = "";
+        for (var i = 0; i < array.length; i++) {
+            result += String.fromCharCode(array[i]);
+        }
+        return result;
+    }
+
+    function getOneTrackAndAds() {
+        
+        $.ajax({
+            url: "http://moviserver.cloudapp.net/service1.svc/web/getTrackAndAds",
+            type: "POST",
+            cache: false,
+            //CARE: the parameter name MUST match the parameter definition on wcf
+            data: JSON.stringify({ token: "w8" }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            processData: true,
+            //note: complete responds with data.responseJSON
+            // success responds with data directly
+            success: function (data) {
+                trackingAds = data.d;
+                setMoviAd(trackingAds.title, trackingAds.text, trackingAds.image);
+            },
+            error: function (response) {
+                alert('Failed: ' + response.statusText);
+            }
+        });
+        return trackingAds;
+    }
+
+
+
+    </script>
+
+</body>
+</html>
