@@ -37,6 +37,15 @@ function queryString(a) {
 }
 
 
+//this generates a random ID
+//TODO: use a "static class" that outpus letters in order if 
+//we encounter problems debugging this
+function randomIdGenerator() {
+    var randLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    return uniqid = randLetter + Date.now();
+    
+}
+
 function trackingRectangle(parentSVG, URL, _title, _text, _image, _startTime) {
     var domNode = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     parentSVG.appendChild(domNode);
@@ -107,8 +116,72 @@ function trackingRectangle(parentSVG, URL, _title, _text, _image, _startTime) {
     }
 }
 
+function moviUserControls(_rootElementID) {
+    var rootElementId = _rootElementID;
+    //this enables the accordion functionality on existing divs
+    $('#' + rootElementId).find('h2').click(function () {
+        $(this).next().slideToggle();
+    }).next().hide();
 
+    ////add a new accordion item to the DOM
+    //function setMoviAd(title, content, image) {
+    //    var imageSrc = "data:image/jpg;base64," + btoa(bin2String(trackingAds.image));
+    //    $('#accordion-js').prepend('<h2>' + title + '</h2><div><img src="' + imageSrc + '" /><p>' + content + '</p></div>');
+    //    $('#accordion-js').find('h2').first().click(function () { $(this).next().slideToggle() }).next().hide();
+    //}
 
+    //add a new accordion highligth item to the DOM
+    function addHightlight(title, content, startTime, endTime) {
+        var itemId = randomIdGenerator();
+        $('#' + rootElementId).prepend('<h2 id='+itemId+'>' + title + '</h2><div><p onclick="seekVideo('+ startTime +')">' + content + '</p></div>');
+        $('#'+ rootElementId).find('h2').first().click(function () { $(this).next().slideToggle() }).next().hide();
+        //trigger an event when an item is added
+        triggerAddedEvent(itemId, title, content, startTime, endTime)
+    }
+
+    //edit an accordion highlight with the given id
+    function editHighlight(highLightId,callerId, title, content, startTime, endTime) {
+        $('#' + highLightId).text(title);
+        $('#' + highLightId).next().children('p').text(content);
+        $('#' + highLightId).next().children('p').click(function () { seekVideo(startTime); });
+        triggerEditedEvent(highLightId, callerId, title, content, startTime, endTime);
+    }
+   
+
+    function triggerAddedEvent(_elementId, _title, _content,_startTime, _endTime) {
+        $.event.trigger({
+            type: "moviUserControlAdded",
+            message: {
+                elementId: _elementId,
+                title: _title,
+                content: _content,
+                startTime: _startTime,
+                endTime: _endTime
+            }
+        });
+    }
+
+    function triggerEditedEvent(_elementId, _callerId, _title, _content, _startTime, _endTime) {
+        $.event.trigger({
+            type: "moviUserControlEdited",
+            message: {
+                elementId: _elementId,
+                callerId : _callerId,
+                title: _title,
+                content: _content,
+                startTime: _startTime,
+                endTime: _endTime
+            }
+        });
+    }
+
+    return {
+        addHightlight: addHightlight,
+        editHighlight: editHighlight
+    }
+}
+
+//this is intended to be used on the player as 27/05/2015
 function Visualization(_moviAd, _index, parentSVG, _tweetList) {
     this.moviAd = _moviAd;
     this.index = _index;
@@ -140,9 +213,8 @@ function Visualization(_moviAd, _index, parentSVG, _tweetList) {
             this.rectangle.visible(this.tweetList);
         }
     }
-
-
 }
+
 
 
 function moviCommunicationManager(parentSVG) {

@@ -16,7 +16,7 @@
     <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
     <link rel="stylesheet" href="../Styles/accordion.css">
     <script type="text/javascript">
-        //event to get the click evento from the video (actually the SVG on top of the video)
+        //event to get the click event from the video (actually the SVG on top of the video)
     //TODO: move this code to Utility.js?
         function myFunction(text, event) {
             parent.postMessage({ moviType: "onclick", Xpos: event.pageX, Ypos: event.pageY, time: player.getCurrentTime() }, developerApiHost);

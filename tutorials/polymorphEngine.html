@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Testing a polimorph Engine</title>
+</head>
+<body>
+    <p>Test this code in a bowser console</p>
+
+    <script type="text/javascript">
+        var typeEngine = [new car("front", "blue"), new car("back", "yellow"), new bike(2,"black")];
+        
+        //declaring to objects with the render method
+        function car(axis, color) {
+            myType = "car";
+            function render() {
+                return color;
+            }
+            function changeColor(_color) {
+                color = _color;
+            }
+            return {
+                render: render,
+                changeColor: changeColor,
+            }
+        }
+        function bike(wheels, color) {
+            myType = "bike";
+            usage = "heavy";
+            function render() {
+                return wheels;
+            }
+            return {
+                render: render,
+            }
+        }
+    </script>
+</body>
+</html>

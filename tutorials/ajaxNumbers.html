@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>ajax number formatting</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script type="text/javascript">
+        function serviceCall() {
+            var numberA = 2.6;
+            var numberB = 3.3;
+            var floatA = 4.5;
+            var floatB = 5.4;
+            $.ajax({
+                url: "http://moviserver.cloudapp.net/service1.svc/web/jsNumberManipulation",
+                type: "POST",
+                cache: false,
+                //CARE: the parameter name MUST match the parameter definition on wcf
+                //TODO: we are using a harcoded edit session for testing
+                data: JSON.stringify({
+                    parA: numberA,
+                    parB: numberB,
+                    dlbA: floatA,
+                    dlbB: floatB
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                processData: true,
+                //note: complete responds with data.responseJSON
+                // success responds with data directly
+                success: function (data) {
+                    
+                    alert("success, message received: \n" + data.d)
+
+                },
+                error: function (response) {
+                    alert('Failed: ' + response.statusText);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>ajax number formatting</h1>
+    <button type="button" id="saveHL" onclick="serviceCall()"> SERVICE CALL</button>
+</body>
+</html>

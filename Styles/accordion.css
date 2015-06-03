@@ -1,10 +1,5 @@
 ﻿.accordion
 {
-    border: 1px solid #ddd;
-    border-top: none; 
-    float: left; 
-    width: 340px; 
-    height: 408px; 
     overflow-y: auto;
     position: relative;}
     .accordion a{display: block; text-decoration: none;}
@@ -15,12 +10,12 @@
     background-image: -webkit-linear-gradient(bottom, #f1f1f1, #fff);
     background-image: linear-gradient(bottom, #f1f1f1, #fff); border-top: 1px solid #ddd;
     color: #222; font: 14px/30px 'Verdana', sans-serif; height: 30px; margin: 0; padding: 0; text-indent: 10px;}
-    p{
-        color: #555; 
-        font: 12px/18px 'Verdana', sans-serif; 
-        padding: 20px 10px; 
-        border-bottom:solid;
-        border-bottom-width : 1px
+.accordion p{
+    color: #555; 
+    font: 12px/18px 'Verdana', sans-serif; 
+    padding: 20px 10px; 
+    border-bottom:solid;
+    border-bottom-width : 1px
 }
 .moviGrid {
     padding: 0px;

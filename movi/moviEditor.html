@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>movi Editor</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <link rel="stylesheet" href="../Styles/accordion.css">
+    <link rel="stylesheet" href="../Styles/editor.css">
+    
+
+</head>
+<body>
+    <h1>Movi Editor</h1>
+    <div id="container">
+        <div id="toolBox">
+            <h1>TOOLS</h1>
+            <p>select any of the tools to start</p>
+            <button type="button" id="toolElement" onclick="showControl()"> HIGHLIGHTS</button>
+            <div id="formControl">
+                <label>Title: <input type="text" name="title" id="title" /></label><br />
+                <label>Description: <input type="text" name="dsc" id="dsc" /></label><br />
+                <button type="button" id="enableTrackEditorBtn" onclick="enableTrackEditor()">SELECT TRACK</button>
+                <button type="button" disabled id="sendToProcessBtn" >PROCESS</button><br />
+                <label>Start Time: <input type="time" class="moviTime" name="startTime" id="startTime" /></label><br />
+                <label>End Time: <input type="time" class="movitime" name="endTime" id="endTime" /></label><br />
+                <button type="button" id="saveHL" onclick="saveHighlight()"> SAVE</button>
+                <button type="button" disabled id="editHL" onclick="editHighlight()"> EDIT</button>
+                <span id="controlToEditId" style="visibility:hidden; background-color:green">control to edit</span>
+                <span id="callerControlId" style="visibility:hidden; background-color:green">caller control</span>
+            </div>
+            <button type="button" id="toolElement" > BOOKMARKS</button>
+        </div>
+        
+        <div id="videoContainer">
+            <svg id="svgRoot" xmlns="http://www.w3.org/2000/svg">
+            </svg>
+            <div id="moviEditor"></div>
+        </div>
+        <div id="moviControl" class="accordion">
+            <h2 >Testing Title</h2>
+            <div>
+                <p>movi control area</p>
+            </div>
+        </div>
+        
+        <!--<div id="credits">
+            <p>credit space</p>
+        </div>-->
+        <div id="results">
+            <p>result space</p>
+            <div class="resultElement">
+                <p>Titulo del elemento</p>
+                <p>5:30  =>  5:50</p>
+            </div>
+            <div class="resultElement">
+                <p>segundo elemento</p>
+                <p>15:30  =>  15:50</p>
+            </div>
+        </div>
+    </div id="container"> 
+
+    <p id="testingTag"> ir a posicion en el video</p>
+    
+    <!-- load here the sripts because they need the DOM elements to be loaded -->
+    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
+    <script type="text/javascript" src="../Scripts/movi/moviEditor.js"></script>
+    
+    <!-- page specific scripts -->
+    <script type="text/javascript">
+        //var userController = new moviUserControls("moviControl");
+        //var canvasController = new moviCanvasController();
+
+        var mainController = new moviEditorController("moviControl");
+        $('#formControl').slideToggle();
+
+        $('#testingTag').click(function () { $('#title').val("hello world"); });
+
+        function saveHighlight() {
+            //userController.addHightlight($('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val());
+            mainController.addUserControlToDOM({
+                title: $('#title').val(),
+                content: $('#dsc').val(),
+                startTime: $('#startTime').val(),
+                endTime: $('#endTime').val(),
+                })
+
+            //clear the boxes
+            $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
+            $('#formControl').slideToggle();
+        }
+
+        function editHighlight() {
+            userController.editHighlight($('#controlToEditId').text(), $('#callerControlId').text(), $('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val())
+            $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
+            $('#editHL').attr("disabled", "disabled");
+            $('#saveHL').removeAttr("disabled");
+        }
+
+        function enableTrackEditor() {
+            mainController.enableTrackTool();
+        }
+
+
+        
+        function showControl() {
+            if (!mainController.isActiveTool()) {
+                $('#formControl').slideToggle();
+                mainController.selectMode("highlight");
+            }
+        }
+    </script>
+</body>
+</html>
+
