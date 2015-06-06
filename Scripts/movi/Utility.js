@@ -45,6 +45,99 @@ function randomIdGenerator() {
     return uniqid = randLetter + Date.now();
     
 }
+//apply the scaling transformations
+//the player is expected to keep the aspect ratio adding black bars 
+//when the player aspect ratio does not match the video Aspect ratio.
+//shownDimensions: the actual rendered to the user dimensions
+//TODO: add a flag in the service to process streched video when needed
+
+function scaler(playerWidth, playerHeight, sourceWidth, sourceHeight)
+{
+    var Yratio = 1;
+    var Xratio = 1;
+    var Yoff = 0;
+    var Xoff = 0;
+    var sourceAR = sourceWidth / sourceHeight;
+    var playerAR = playerWidth / playerHeight;
+    if ((playerAR) < sourceAR)
+    {
+        //horizontal black bars, playerWidth == shownWidth
+        var shownHeight = (1/sourceAR) * playerWidth;
+        Yoff = (playerHeight - shownHeight) / 2;
+        Xratio = sourceWidth /playerWidth;
+        Yratio = sourceHeight / shownHeight;
+    }
+    else if ((playerAR) > sourceAR)
+    {
+        //vertical black bars, playerHeight == shownHeight
+        shownWidth = sourceAR * playerHeight;
+        Xoff = (playerWidth - shownWidth) / 2;
+        Xratio = sourceWidth / shownWidth ;
+        Yratio = sourceHeight / playerHeight ;
+    }
+    else if ((playerAR) == sourceAR)
+    {
+        //last because of aritmetic errors this is the least possible
+        //this does not mean that the player has the same size as the source
+        Xratio = sourceHeight / playerHeight;
+        Yratio = sourceWidth / playerWidth;
+    }
+
+    function scaleToSend(Xtl, Ytl, width, height) {
+        Xtl = Xratio * (Xtl - Xoff);
+        Ytl = Yratio * (Ytl - Yoff);
+        width = width * Xratio;
+        height = height * Yratio;
+
+        return {
+            Xtl: Xtl,
+            Ytl: Ytl,
+            width: width,
+            height: height,
+        };
+    }
+    //caution: this are the array functions
+    //caution: this function modifyes the original data, so a return value is not needed
+    function scaleReceived(Xtl, Ytl, Xbr, Ybr) {
+        for (i = 0; i < Xtl.length; i++) {
+            //they must be the same length
+            Xtl[i] = (Xtl[i] / Xratio) + Xoff;
+            Ytl[i] = (Ytl[i] / Yratio) + Yoff;
+            Xbr[i] = (Xbr[i] / Xratio) + Xoff;
+            Ybr[i] = (Ybr[i] / Yratio) + Yoff;
+        }
+        return {
+            Xtl: Xtl,
+            Ytl: Ytl,
+            Xbr: Xbr,
+            Ybr: Ybr,
+        };
+    }
+    //caution: this are the array functions
+    //caution: this function modifyes the original data, so a return value is not needed
+    //caution: the service expects integers, thats why we are using floor.
+    function scaleToStore(Xtl, Ytl, Xbr, Ybr) {
+        for (i = 0; i < Xtl.length; i++) {
+            Xtl[i] = Math.floor((Xtl[i] - Xoff) * Xratio);
+            Ytl[i] = Math.floor((Ytl[i] - Yoff) * Yratio);
+            Xbr[i] = Math.floor((Xbr[i] - Xoff) * Xratio);
+            Ybr[i] = Math.floor((Ybr[i] - Yoff) * Yratio);
+        }
+        return {
+            Xtl: Xtl,
+            Ytl: Ytl,
+            Xbr: Xbr,
+            Ybr: Ybr,
+        };
+    }
+    return {
+        scaleToSend: scaleToSend,
+        scaleReceived: scaleReceived,
+        scaleToStore: scaleToStore,
+    }
+}
+
+
 
 function trackingRectangle(parentSVG, URL, _title, _text, _image, _startTime) {
     var domNode = document.createElementNS("http://www.w3.org/2000/svg", "rect");

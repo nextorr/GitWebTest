@@ -1,7 +1,7 @@
 ﻿/// <reference path="../jquery21/jquery-2.1.0-vsdoc.js" />
 
 //TODO: call this function when the document is ready
-moviEditor();
+moviEditorInitialization();
 
 //------------------HANDLING THE RESULT SPACE ELEMENTS------------------
 //subscribe to the moviUserControlAdded event
@@ -48,37 +48,74 @@ function editedControlHandler(e) {
 }
 //------------------END HANDLING THE RESULT SPACE ELEMENTS------------------
 
-function moviEditor() {
+function moviEditorInitialization() {
     var pivot = document.getElementById("moviEditor");
     //replace the id to be used by the youtube player
     pivot.id = "player";
     
-    //var editor = document.createElement("div");
-    //editor.id = "player"
-    //this replaces the ID 
-    //pivot.parentNode.replaceChild(editor, pivot);
+    //initializing all the components, routing events 
+    //and variuos housekeeping
+    $('#formControl').slideToggle();
 
+    //event initialization for all the HTML elements
+    $('#highlightEditor').click(function () { showControl(); });
+    $('#enableTrackEditorBtn').click(function () { enableTrackEditor(); });
+    $('#saveHL').click(function () { saveHighlight(); });
+    $('#editHL').click(function () { editHighlight(); });
+    $('#publishButton').click(function () { publishData() });
+
+    function saveHighlight() {
+        //userController.addHightlight($('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val());
+        mainController.addUserControlToDOM({
+            title: $('#title').val(),
+            content: $('#dsc').val(),
+            startTime: $('#startTime').val(),
+            endTime: $('#endTime').val(),
+        })
+
+        //clear the boxes
+        $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
+        $('#formControl').slideToggle();
+    }
+
+    function editHighlight() {
+        userController.editHighlight($('#controlToEditId').text(), $('#callerControlId').text(), $('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val())
+        $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
+        $('#editHL').attr("disabled", "disabled");
+        $('#saveHL').removeAttr("disabled");
+    }
+
+    function enableTrackEditor() {
+        mainController.enableTrackTool();
+    }
+
+    function showControl() {
+        if (!mainController.isActiveTool()) {
+            $('#formControl').slideToggle();
+            mainController.selectMode("highlight");
+        }
+    }
+
+    function publishData() {
+        mainController.storeData();
+        //$('#publishButton').attr("disabled", "disabled");
+    }
 }
 
 //------------------youtube API functions------------------
-
-// 2. This code loads the IFrame Player API code asynchronously.
-var tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-var firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+//the API load scripts are called from the main controller class
 
 // 3. This function creates an <iframe> (and YouTube player)
 //    after the API code downloads.
 var player;
-
+var ytVideoID;
 //TODO: we are using a hardcoded video ID for testing
 //youtube api video M7lc1UVf-VE
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('player', {
         height: $('#videoContainer').height(),
         width: $('#videoContainer').width(),
-        videoId: 'RaQa201Hezs',
+        videoId: ytVideoID,
         playerVars: { wmode: "opaque"},
         events: {
             'onReady': onPlayerReady,
@@ -115,7 +152,6 @@ function seekVideo(time) {
 function pauseVideo() {
     player.pauseVideo();
 }
-
 //setting up the tracking area renderer
 function updatePlayerInfo() {
     // Also check that at least one function exists since when IE unloads the
@@ -143,7 +179,7 @@ function updatePlayerInfo() {
 var trackingAds = [];
 var trackDataReady = false;
 
-function moviCanvasController() {
+function moviCanvasController(_scaler) {
     //TODO: lazy apporach calling directly the DOM elements
     //to be cleaner use references instead 
     
@@ -162,7 +198,7 @@ function moviCanvasController() {
             //TODO: it creates a new objet or it uses the previos one?
             //check for strange behaviour in both cases
             //TODO: always make sure that one event handler is attached per object.
-            $('#svgRoot').click(function (event) {new areaSelector(event, $('#svgRoot'), $('#svgRoot').offset().left, $('#svgRoot').offset().top); });
+            $('#svgRoot').click(function (event) { new areaSelector(event, $('#svgRoot'), $('#svgRoot').offset().left, $('#svgRoot').offset().top, _scaler); });
             diabled = false;
             //disable the select track button to avoid multiple area selection
             $('#enableTrackEditorBtn').attr("disabled", "disabled");
@@ -184,7 +220,7 @@ function moviCanvasController() {
     }
 }
 
-function areaSelector(eventAS, parentSVG, offsetX, offsetY) {
+function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler) {
     var Xtl = eventAS.pageX - offsetX;
     var Ytl = eventAS.pageY - offsetY;
     var width;
@@ -243,7 +279,7 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY) {
         $('#sendToProcessBtn').attr("disabled", "disabled");
         //remove the previos click event on the parentSVG  so we have consistent workflow of event handling
         parentSVG.off("click");
-        
+        var scaled = _scaler.scaleToSend(Xtl, Ytl, width, height)
 
         //remove the select rectangle tool
         parentSVG.get(0).removeChild(domNode);
@@ -258,13 +294,11 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY) {
             //the height - 35 indicate the youtube video controls height
             //the service expects time in millisecons
             data: JSON.stringify({
-                Xtl: Xtl,
-                Ytl: Ytl,
-                width: width,
-                height: height,
+                Xtl: scaled.Xtl,
+                Ytl: scaled.Ytl,
+                width: scaled.width,
+                height: scaled.height,
                 time: initialTime * 1000,
-                playerHeight: $('#videoContainer').height() - 35,
-                playerWidth: $('#videoContainer').width(),
                 sessionToken: '74EE24D6-EB74-42F2-90AE-F69BB6478D50'
             }),
             contentType: "application/json; charset=utf-8",
@@ -314,7 +348,7 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY) {
 function moviTrackedUserControl() {
     var title;
     var content;
-    var starTime;
+    var startTime;
     var endTime;
     var userControl;
     var parentSvgDOM;
@@ -323,6 +357,10 @@ function moviTrackedUserControl() {
     var rectangle ;
 
     function render(time, offset) {
+        if (!hasTrack)
+        {
+            return;
+        }
         var innerIndex = binaryIndexOf.call(trackData.timeLine, time);
         if ((time < trackData.timeLine[0] || time > trackData.timeLine[trackData.timeLine.length - 1])) {
             //the asked time is outside the timeLine definition, hide the rectangle
@@ -367,27 +405,67 @@ function moviTrackedUserControl() {
         //save the info into the structure
         title = _title;
         content = _content;
-        starTime = _startTime;
+        startTime = _startTime;
         endTime = _endTime;
+    }
+    function getFormattedData() {
+        var tempHighlight;
+        if (hasTrack)
+        {
+            tempHighlight = {
+                title: title,
+                content: content,
+                startTime: startTime,
+                endTime: endTime,
+                trackData: trackData,
+            };
+        }
+        else
+        {
+            tempHighlight = {
+                title: title,
+                content: content,
+                startTime: startTime,
+                endTime: endTime,
+                trackData: null,
+            };
+        }
+        return tempHighlight
     }
 
     return {
         render: render,
         setData: setData,
         setTrack: setTrack,
+        getFormattedData: getFormattedData,
     }
 
 }
 
-function moviEditorController(userControlContainerId) {
+function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourceHeight) {
     var trackingAreaAndInfo = [];
     var trackDataReady = false;
     var activeTool = false;
     //mode will tell me how the control reacts to some function calls
     var mode;
+
+    // 2. This code loads the youtube IFrame Player API code asynchronously.
+    // its called here to guarantee that it loads after the caller HTML file calls
+    //the main controlles contructor that contais the video ID
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    //and set the videoID global variable to be used on the api ready functions
+    ytVideoID = ytVideo;
+    
+    //scale control variables
+    var myScaler = scaler($('#videoContainer').width(), $('#videoContainer').height(), sourceWidth, sourceHeight);
+
     //make a reference to the front end render controller
     userControl = new moviUserControls(userControlContainerId);
-    canvasControl = new moviCanvasController();
+    canvasControl = new moviCanvasController(myScaler);
+
 
     //used as a proxy in every mode creation
     var helperConstructor;
@@ -418,11 +496,14 @@ function moviEditorController(userControlContainerId) {
         }
     }
 
-    //add the trak info to the data structure
+    //add the track info to the data structure
     function addTrack(_parentSvgDOM, _receivedTrack) {
         switch (mode) {
             case "highlight":
                 //TODO: some error and type checking on the paremeter info
+                //scale the received info
+                //this function modifes the info we send
+                myScaler.scaleReceived(_receivedTrack.Xtl, _receivedTrack.Ytl, _receivedTrack.Xbr, _receivedTrack.Ybr)
                 helperConstructor.setTrack(_parentSvgDOM, _receivedTrack);
                 trackDataReady = true;
                 canvasControl.toggle();
@@ -463,6 +544,62 @@ function moviEditorController(userControlContainerId) {
         return activeTool;
     }
 
+    function storeData() {
+        var helperHighligth = [];
+        var highlightTemp;
+        var highlightConstructor;
+        var scaledtrackDataTemp;
+        for (var i = 0; i < trackingAreaAndInfo.length; i++) {
+            highlightConstructor = { trackData: {} };
+            highlightTemp = trackingAreaAndInfo[i].getFormattedData();
+            if (highlightTemp.trackData != null) {
+                //apply the scale transformation before sending the info
+                //doing the slice rountrip to prevent modifying the display info
+                scaledtrackDataTemp = myScaler.scaleToStore(highlightTemp.trackData.Xtl.slice(), highlightTemp.trackData.Ytl.slice(),
+                                                         highlightTemp.trackData.Xbr.slice(), highlightTemp.trackData.Ybr.slice());
+                highlightConstructor.trackData.Xtl = scaledtrackDataTemp.Xtl;
+                highlightConstructor.trackData.Ytl = scaledtrackDataTemp.Ytl;
+                highlightConstructor.trackData.Xbr = scaledtrackDataTemp.Xbr;
+                highlightConstructor.trackData.Ybr = scaledtrackDataTemp.Ybr;
+                highlightConstructor.trackData.timeLine = highlightTemp.trackData.timeLine;
+            }
+            else
+            {
+                highlightConstructor.trackData = null;
+            }
+            highlightConstructor.title = highlightTemp.title;
+            highlightConstructor.content = highlightTemp.content;
+            highlightConstructor.startTime = highlightTemp.startTime;
+            highlightConstructor.endTime = highlightTemp.endTime;
+            helperHighligth.push(highlightConstructor)
+        }
+
+        //once the data is formated send it to the service to store
+        $.ajax({
+            url: "http://moviserver.cloudapp.net/service1.svc/web/storeHighlight",
+            type: "POST",
+            cache: false,
+            //CARE: the parameter name MUST match the parameter definition on wcf
+            data: JSON.stringify({
+                highlight: helperHighligth,
+                sessionToken: '74EE24D6-EB74-42F2-90AE-F69BB6478D50'
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            processData: true,
+            //note: complete responds with data.responseJSON
+            // success responds with data directly
+            success: function (data) {
+                //TODO: the service respond with the trackarea tokens, 
+                //we can use them to allow data edit.
+                alert('Store success');
+
+            },
+            error: function (response) {
+                alert('Failed: ' + response.statusText);
+            }
+        });
+    }
     return {
         selectMode: selectMode,
         enableTrackTool: enableTrackSelectTool,
@@ -470,5 +607,6 @@ function moviEditorController(userControlContainerId) {
         addUserControlToDOM: addUserControlToDOM,
         render: render,
         isActiveTool: isActiveTool,
+        storeData: storeData,
     }
 }

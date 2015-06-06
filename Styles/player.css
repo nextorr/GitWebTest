@@ -1,0 +1,19 @@
+﻿#container {
+    width: 720px;
+    height: 405px;
+    border: 1px solid ;
+}
+
+#videoContainer{
+    box-shadow:0px 0px 0px 1px lightgreen inset;
+    width:80%;
+    height:100%;
+    float:left;
+}
+
+#svgRoot{
+    position:absolute; 
+    width: 150px; 
+    height: 150px;  
+    box-shadow:0px 0px 0px 1px yellow inset;
+}

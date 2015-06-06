@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>movi player v2</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <link rel="stylesheet" href="../Styles/accordion.css">
+    <link rel="stylesheet" href="../Styles/player.css">
+</head>
+<body>
+    <div id="container">
+        <div id="videoContainer">
+            <svg id="svgRoot" xmlns="http://www.w3.org/2000/svg">
+            </svg>
+            <div id="moviPlayer"></div>
+        </div>
+        <div id="moviControl" class="accordion">
+            <h2>Testing Title</h2>
+            <div>
+                <p>movi control area</p>
+            </div>
+        </div>
+    </div>
+    <!-- load here the scripts because they need the DOM elements to be loaded -->
+    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
+    <script type="text/javascript" src="../Scripts/movi/moviPlayer.js"></script>
+
+    <!-- page specific scripts -->
+    <script type="text/javascript">
+        //url parameters initialization
+        var urlParameters = queryString(window.location.search.substr(1).split('&'));
+        if (urlParameters["id"] != null) {
+            var idToken = urlParameters["id"];
+        }
+        else
+        {
+            //WARNING: this default is for testing 5/06/2015, as it 'might not exist'
+            var idToken = 'o'
+        }
+        
+        var mainController = moviPlayerController("moviControl", 1280, 720, idToken)
+        
+
+    </script>
+</body>
+</html>
