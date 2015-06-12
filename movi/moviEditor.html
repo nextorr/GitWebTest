@@ -19,7 +19,11 @@
                 <label>Title: <input type="text" name="title" id="title" /></label><br />
                 <label>Description: <input type="text" name="dsc" id="dsc" /></label><br />
                 <button type="button" id="enableTrackEditorBtn">SELECT TRACK</button>
-                <button type="button" disabled id="sendToProcessBtn" >PROCESS</button><br />
+                <button type="button" disabled id="sendToProcessBtn" >PROCESS</button>
+                <button type="button" disabled id="cancelSelection">CANCEL</button>
+                <div id="waitingBanner"><img id="waitingAnimation" src="../Assets/712.gif" alt="waiting...." />
+                    <span>Waiting...</span> <br />
+                </div>
                 <label>Start Time: <input type="time" class="moviTime" name="startTime" id="startTime" /></label><br />
                 <label>End Time: <input type="time" class="movitime" name="endTime" id="endTime" /></label><br />
                 <button type="button" id="saveHL"> SAVE</button>

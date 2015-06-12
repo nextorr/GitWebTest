@@ -63,6 +63,16 @@ function moviEditorInitialization() {
     $('#saveHL').click(function () { saveHighlight(); });
     $('#editHL').click(function () { editHighlight(); });
     $('#publishButton').click(function () { publishData() });
+    $('#endTime').change(function () {
+        if ($('#endTime').val() > $('#startTime').val())
+        {
+            $('#endTime').val(mainController.setEndTime($('#endTime').val()));
+        }
+        else {
+            $('#endTime').val(parseFloat($('#startTime').val()) + 0.1);
+        }
+        
+    });
 
     function saveHighlight() {
         //userController.addHightlight($('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val());
@@ -202,6 +212,8 @@ function moviCanvasController(_scaler) {
             diabled = false;
             //disable the select track button to avoid multiple area selection
             $('#enableTrackEditorBtn').attr("disabled", "disabled");
+            //enable the cancel button
+            $('#cancelSelection').removeAttr("disabled")
         }
         else {
             //this a small height for testing
@@ -271,18 +283,39 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler) {
         //Since this is a dinamic attachement we need to remove when we are done with it
         //to prevent multiple adittions
         $('#sendToProcessBtn').click(function () { sendToTracker() });
+        //allow the cancel button to clear the dom element.
+        $('#cancelSelection').click(function () { cancelSelection() });
     });
+
+    var cancelSelection = function () {
+        //disble the button to avoid multiple calls and remove the event to avoid call nesting on the event
+        $('#sendToProcessBtn').off("click");
+        $('#sendToProcessBtn').attr("disabled", "disabled");
+        $('#cancelSelection').off("click");
+        $('#cancelSelection').attr("disabled", "disabled");
+        //remove the previos click event on the parentSVG  so we have consistent workflow of event handling
+        parentSVG.off("click");
+        //remove the select rectangle tool
+        parentSVG.get(0).removeChild(domNode);
+        //and reset the tool
+        mainController.cancelHandler();
+    }
 
     var sendToTracker = function () {
         //disble the button to avoid multiple calls and remove the event to avoid call nesting on the event
         $('#sendToProcessBtn').off("click");
         $('#sendToProcessBtn').attr("disabled", "disabled");
+        $('#cancelSelection').off("click");
+        $('#cancelSelection').attr("disabled", "disabled");
         //remove the previos click event on the parentSVG  so we have consistent workflow of event handling
         parentSVG.off("click");
         var scaled = _scaler.scaleToSend(Xtl, Ytl, width, height)
 
         //remove the select rectangle tool
         parentSVG.get(0).removeChild(domNode);
+
+        //show waiting animation
+        $('#waitingBanner').css("display", "block");
 
 
         $.ajax({
@@ -291,7 +324,6 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler) {
             cache: false,
             //CARE: the parameter name MUST match the parameter definition on wcf
             //TODO: we are using a harcoded edit session for testing
-            //the height - 35 indicate the youtube video controls height
             //the service expects time in millisecons
             data: JSON.stringify({
                 Xtl: scaled.Xtl,
@@ -332,13 +364,20 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler) {
                 //needed definition for the front and to work properly
                 //canvasController.toggle();
 
+                // write the end time to the text box
+                $('#endTime').val(data.d.timeLine[data.d.timeLine.length-1])
                 //temporary visual indication that the service succeded
                 alert('success');
 
             },
             error: function (response) {
                 alert('Failed: ' + response.statusText);
-            }
+                mainController.errorHandler();
+            },
+            complete: function () {
+                //hide waiting animation
+                $('#waitingBanner').css("display", "none");
+            },
         });
     }
 }
@@ -354,7 +393,8 @@ function moviTrackedUserControl() {
     var parentSvgDOM;
     var trackData;
     var hasTrack = false;
-    var rectangle ;
+    var rectangle;
+    var renderEndTime;
 
     function render(time, offset) {
         if (!hasTrack)
@@ -362,7 +402,13 @@ function moviTrackedUserControl() {
             return;
         }
         var innerIndex = binaryIndexOf.call(trackData.timeLine, time);
-        if ((time < trackData.timeLine[0] || time > trackData.timeLine[trackData.timeLine.length - 1])) {
+        //no render truncating
+        //if ((time < trackData.timeLine[0] || time > trackData.timeLine[trackData.timeLine.length - 1])) {
+        //    //the asked time is outside the timeLine definition, hide the rectangle
+        //    rectangle.collapse();
+        //}
+        //enable render truncating
+        if ((time < trackData.timeLine[0] || time > renderEndTime)) {
             //the asked time is outside the timeLine definition, hide the rectangle
             rectangle.collapse();
         }
@@ -394,6 +440,7 @@ function moviTrackedUserControl() {
     function setTrack(_parentSvgDOM, _trackData) {
         parentSvgDOM = _parentSvgDOM;
         trackData = _trackData;
+        renderEndTime = _trackData.timeLine[_trackData.timeLine.length - 1];
         if (rectangle == null) {
             rectangle = new trackingRectangle(parentSvgDOM);
         }
@@ -433,11 +480,25 @@ function moviTrackedUserControl() {
         return tempHighlight
     }
 
+    function setRenderTime(time) {
+        if (time < trackData.timeLine[trackData.timeLine.length - 1]) {
+            renderEndTime = time;
+            return renderEndTime;
+        }
+        renderEndTime = trackData.timeLine[trackData.timeLine.length - 1]
+        return renderEndTime;
+    }
+    function getRenderEndTime() {
+        return renderEndTime;
+    }
+
     return {
         render: render,
         setData: setData,
         setTrack: setTrack,
         getFormattedData: getFormattedData,
+        setRenderTime: setRenderTime,
+        getRenderEndTime: getRenderEndTime,
     }
 
 }
@@ -511,7 +572,32 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
         }
     }
 
+    //handling the service errors
+    function errorHandler() {
+        switch (mode) {
+            case "highlight":
+                //for now just toogle the controls.
+                //this allows the user to resend the request.
+                canvasControl.toggle();
+                break;
+        }
+    }
 
+    function cancelHandler() {
+        switch (mode) {
+            case "highlight":
+                //for now just toogle the controls.
+                //this allow the user to star from 0 the select area workflow
+                canvasControl.toggle();
+                break;
+        }
+    }
+
+    //sets the end time of the stored track data, this end time 
+    //is then used to truncate the data when publishing
+    function setEndTime(time) {
+        return helperConstructor.setRenderTime(time);
+    }
     //generic creation, specific is controlled by the mode
     //parameter is a generic Object, specifics is controlled by the mode
     //TODO: how to extend this functionality to the other user controls like bookmarks
@@ -549,19 +635,21 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
         var highlightTemp;
         var highlightConstructor;
         var scaledtrackDataTemp;
+        var innerIndex;
         for (var i = 0; i < trackingAreaAndInfo.length; i++) {
             highlightConstructor = { trackData: {} };
             highlightTemp = trackingAreaAndInfo[i].getFormattedData();
             if (highlightTemp.trackData != null) {
                 //apply the scale transformation before sending the info
                 //doing the slice rountrip to prevent modifying the display info
-                scaledtrackDataTemp = myScaler.scaleToStore(highlightTemp.trackData.Xtl.slice(), highlightTemp.trackData.Ytl.slice(),
-                                                         highlightTemp.trackData.Xbr.slice(), highlightTemp.trackData.Ybr.slice());
+                innerIndex = binaryIndexOf.call(highlightTemp.trackData.timeLine, trackingAreaAndInfo[i].getRenderEndTime());
+                scaledtrackDataTemp = myScaler.scaleToStore(highlightTemp.trackData.Xtl.slice(0, innerIndex), highlightTemp.trackData.Ytl.slice(0, innerIndex),
+                                                         highlightTemp.trackData.Xbr.slice(0, innerIndex), highlightTemp.trackData.Ybr.slice(0, innerIndex));
                 highlightConstructor.trackData.Xtl = scaledtrackDataTemp.Xtl;
                 highlightConstructor.trackData.Ytl = scaledtrackDataTemp.Ytl;
                 highlightConstructor.trackData.Xbr = scaledtrackDataTemp.Xbr;
                 highlightConstructor.trackData.Ybr = scaledtrackDataTemp.Ybr;
-                highlightConstructor.trackData.timeLine = highlightTemp.trackData.timeLine;
+                highlightConstructor.trackData.timeLine = highlightTemp.trackData.timeLine.slice(0, innerIndex);
             }
             else
             {
@@ -608,5 +696,8 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
         render: render,
         isActiveTool: isActiveTool,
         storeData: storeData,
+        errorHandler: errorHandler,
+        cancelHandler: cancelHandler,
+        setEndTime: setEndTime,
     }
 }
