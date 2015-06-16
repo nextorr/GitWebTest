@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Events Tutorials</title>
+</head>
+<body>
+    <p>here we are testing the different ways to handle and use events</p>
+    <p>1. getting an instance of the caller: say we attach the same event handler to differents buttons, 
+    now we need to check we this call is made from</p>
+    <p>also shows an example of how to use data dash attributes to set "private" data into the HTML elements</p>
+    <button data-toggleCall="false" id="callerA"> CALLER A</button>
+    <button data-togglecall="false" id="callerB">CALLER B</button>
+
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script type="text/javascript">
+        $('#callerA').click(function (event) { buttonHandler(event) });
+        $('#callerB').click(function (event) { buttonHandler(event) });
+
+        function buttonHandler(e) {
+            if ($(e.target).attr("data-toggleCall") == "false") {
+                $(e.target).text($(e.target).text() + " - CLICKED");
+                $(e.target).attr("data-toggleCall", "true");
+            }
+            else {
+                $(e.target).text($(e.target).text().replace(/ - CLICKED/, ""));
+                $(e.target).attr("data-toggleCall", "false");
+            }
+        }
+    </script>
+</body>
+
+
+</html>

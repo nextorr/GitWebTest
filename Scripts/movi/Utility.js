@@ -114,7 +114,7 @@ function scaler(playerWidth, playerHeight, sourceWidth, sourceHeight)
         };
     }
     //caution: this are the array functions
-    //caution: this function modifyes the original data, so a return value is not needed
+    //caution: this function modifies the original data, so a return value is not needed
     //caution: the service expects integers, thats why we are using floor.
     function scaleToStore(Xtl, Ytl, Xbr, Ybr) {
         for (i = 0; i < Xtl.length; i++) {
@@ -200,12 +200,16 @@ function trackingRectangle(parentSVG, URL, _title, _text, _image, _startTime) {
             });
         }
     }
+    function removeFromDOM() {
+        parentSVG.removeChild(domNode);
+    }
 
     return {
         draw: draw,
         switchVisibility: switchVisibility,
         collapse: collapse,
-        visible: visible
+        visible: visible,
+        removeFromDOM: removeFromDOM,
     }
 }
 

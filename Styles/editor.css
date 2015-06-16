@@ -34,11 +34,11 @@
     height:25px;
     margin-top:5px;
 }
-#formControl{
+.moviForm{
     background-color:lightblue;
     visibility:visible;
     width:100%;
-    height:300px;
+    height:auto;
 }
 #videoContainer{
     box-shadow:0px 0px 0px 1px lightgreen inset;
@@ -67,11 +67,11 @@
     visibility:hidden;
 }
 
-#waitingAnimation {
+.waitingAnimation {
     width : 20px;
     height : 20px;
 }
-#waitingBanner{
+.waitingBanner{
     visibility:visible;
     display: none;
 }

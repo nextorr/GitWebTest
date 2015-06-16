@@ -15,23 +15,37 @@
             <h1>TOOLS</h1>
             <p>select any of the tools to start</p>
             <button type="button" class="toolElement" id="highlightEditor"> HIGHLIGHTS</button>
-            <div id="formControl">
+            <div id="formControl" class="moviForm">
                 <label>Title: <input type="text" name="title" id="title" /></label><br />
                 <label>Description: <input type="text" name="dsc" id="dsc" /></label><br />
-                <button type="button" id="enableTrackEditorBtn">SELECT TRACK</button>
-                <button type="button" disabled id="sendToProcessBtn" >PROCESS</button>
-                <button type="button" disabled id="cancelSelection">CANCEL</button>
-                <div id="waitingBanner"><img id="waitingAnimation" src="../Assets/712.gif" alt="waiting...." />
+                <button type="button" id="highlightTrackEditorBtn" class="enableTrackEditorBtn">SELECT TRACK</button>
+                <button type="button" disabled id="highlightProcessBtn" class="sendToProcessBtn">PROCESS</button>
+                <button type="button" disabled id="highlightCancel" class="cancelSelection">CANCEL</button>
+                <div id="highlightWaitingBanner" class="waitingBanner">
+                    <img id="HighlightwaitingAnimation" class="waitingAnimation" src="../Assets/712.gif" alt="waiting...." />
                     <span>Waiting...</span> <br />
                 </div>
                 <label>Start Time: <input type="time" class="moviTime" name="startTime" id="startTime" /></label><br />
-                <label>End Time: <input type="time" class="movitime" name="endTime" id="endTime" /></label><br />
+                <label>End Time: <input type="time" class="moviTime endTime" name="endTime" id="endTime" /></label><br />
                 <button type="button" id="saveHL"> SAVE</button>
                 <button type="button" disabled id="editHL"> EDIT</button>
                 <span id="controlToEditId" style="visibility:hidden; background-color:green">control to edit</span>
                 <span id="callerControlId" style="visibility:hidden; background-color:green">caller control</span>
             </div>
             <button type="button" class="toolElement" id="bookmarkEditor"> BOOKMARKS</button>
+            <div id="bookmarkForm" class="moviForm">
+                <label>Description: <input type="text" name="dsc" id="bookmarkDsc" /></label><br />
+                <button type="button" id="bookmarkTrackEditorBtn" class="enableTrackEditorBtn">SELECT TRACK</button>
+                <button type="button" disabled id="bookmarkProcessBtn" class="sendToProcessBtn">PROCESS</button>
+                <button type="button" disabled id="bookmarkCancel" class="cancelSelection">CANCEL</button>
+                <div id="bookmarkWaitingBanner" class="waitingBanner">
+                    <img id="bookmarkWaitingAnimation" class="waitingAnimation" src="../Assets/712.gif" alt="waiting...." />
+                    <span>Waiting...</span> <br />
+                </div>
+                <label>Start Time: <input type="time" class="moviTime" name="startTime" id="bookmarkStartTime" /></label><br />
+                <button type="button" id="saveBM" class="saveToDOM"> SAVE</button>
+                <button type="button" disabled id="editBM" class="ediToDOM"> EDIT</button>
+            </div>
             <button type="button" class="toolElement" id="publishButton"> PUBLISH</button>
         </div>
         
@@ -63,19 +77,24 @@
         </div>
     </div id="container"> 
 
-    <!-- load here the sripts because they need the DOM elements to be loaded -->
-    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
-    <script type="text/javascript" src="../Scripts/movi/moviEditor.js"></script>
+  
     
     <!-- page specific scripts -->
     <script type="text/javascript">
         //var userController = new moviUserControls("moviControl");
         //var canvasController = new moviCanvasController();
+        var rootID = "moviControl";
+        var youtubeVideoURL = 'RaQa201Hezs';
+        var videoSourceWidth = 1280;
+        var videoSourceHeight = 720;
 
-        var mainController = new moviEditorController("moviControl", 'RaQa201Hezs', 1280, 720);
-        
-                
+        //var mainController = new moviEditorController("moviControl", 'RaQa201Hezs', 1280, 720);
     </script>
+
+    <!-- load here the sripts because they need the DOM elements to be loaded -->
+    <!-- and to adapt this code to the MVC convention -->
+    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
+    <script type="text/javascript" src="../Scripts/movi/moviEditor.js"></script>
 </body>
 </html>
 
