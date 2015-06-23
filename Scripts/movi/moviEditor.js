@@ -57,7 +57,7 @@ function moviEditorInitialization() {
     
     //initializing all the components, routing events 
     //and variuos housekeeping
-    $('#formControl').slideToggle(0);
+    $('#highlightForm').slideToggle(0);
     $('#bookmarkForm').slideToggle(0);
 
     //private data initialization for the requiered elements
@@ -66,7 +66,6 @@ function moviEditorInitialization() {
     //event initialization for all the HTML elements
     $('#highlightEditor').click(function (event) { showControl(event); });
     $('#bookmarkEditor').click(function (event) { showControl(event); });
-    $('.enableTrackEditorBtn').click(function () { enableTrackEditor(); });
     $('#saveHL').click(function () { saveHighlight(); });
     $('#editHL').click(function () { editHighlight(); });
     $('#publishButton').click(function () { publishData() });
@@ -74,6 +73,7 @@ function moviEditorInitialization() {
     //common actions 
     //this actions are selected by class because 
     //they are common across the different input forms
+    $('.enableTrackEditorBtn').click(function () { enableTrackEditor(); });
     $('#endTime').change(function () {
         if ($('#endTime').val() > $('#startTime').val())
         {
@@ -86,7 +86,6 @@ function moviEditorInitialization() {
     });
 
     function saveHighlight() {
-        //userController.addHightlight($('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val());
         mainController.addUserControlToDOM({
             title: $('#title').val(),
             content: $('#dsc').val(),
@@ -96,7 +95,7 @@ function moviEditorInitialization() {
 
         //clear the boxes
         $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
-        $('#formControl').slideToggle();
+        $('#highlightForm').slideToggle();
         //enable the button
         $('#highlightEditor').removeAttr("disabled");
     }
@@ -116,19 +115,13 @@ function moviEditorInitialization() {
         
         switch (e.target.id) {
             case "highlightEditor":
-                //$('#formControl').slideToggle();
-                toolVisualization("#formControl", e.target);
+                toolVisualization("#highlightForm", e.target);
                 mainController.selectToolMode("highlight", "new");
-                //disable the button
-                //$(e.target).attr("disabled", "disabled");
                 break;
 
             case "bookmarkEditor":
-                //$('#bookmarkForm').slideToggle();
                 toolVisualization("#bookmarkForm", e.target);
                 mainController.selectToolMode("bookmark", "new");
-                //disable the button
-                //$(e.target).attr("disabled", "disabled");
                 break;
         }
         
@@ -138,9 +131,6 @@ function moviEditorInitialization() {
         mainController.storeData();
         //$('#publishButton').attr("disabled", "disabled");
     }
-
-    
-    
 }
 //-------------------SOME UTILITY FUNCTIONS--------------------
 //enables the toolID while disables the other ones
@@ -184,8 +174,10 @@ function setActiveEndTime(_endTime) {
 //    after the API code downloads.
 var player;
 var ytVideoID;
-//TODO: we are using a hardcoded video ID for testing
-//youtube api video M7lc1UVf-VE
+
+//this time is defined in milliseconds
+var renderUpdateTime = 33;
+
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('player', {
         height: $('#videoContainer').height(),
@@ -200,7 +192,7 @@ function onYouTubeIframeAPIReady() {
     //setting up the renderer
     //TODO: the last elemente set the refresh time
     //but it seem that youtube API has a fixed refresh rate
-    window.setInterval("updatePlayerInfo()", 17);
+    window.setInterval("updatePlayerInfo()", renderUpdateTime);
 }
 // 4. The API will call this function when the video player is ready.
 function onPlayerReady(event) {
@@ -228,6 +220,11 @@ function pauseVideo() {
     player.pauseVideo();
 }
 //setting up the tracking area renderer
+
+//TODO encapsulate this global variables, maybe in the main engine object
+var syncTime = 0;
+var ytTime = 0;
+var renderCounter = 0;
 function updatePlayerInfo() {
     // Also check that at least one function exists since when IE unloads the
     // page, it will destroy the SWF before clearing the interval.
@@ -237,8 +234,22 @@ function updatePlayerInfo() {
     if (player && player.getDuration && player.getPlayerState() == 1) {
         //start to draw if there is at least one moviTrackedUserControl
 
+        //tracking engine v3
+        //rendering all the returned track info data
+        if (syncTime == player.getCurrentTime()) {
+            ytTime = syncTime + (renderCounter * renderUpdateTime) / 1000;
+            renderCounter = renderCounter + 1;
+        }
+        else {
+            ytTime = player.getCurrentTime();
+            syncTime = player.getCurrentTime();
+            renderCounter = 0;
+        }
+        
+        mainController.render(ytTime);
+
         //tracking engine v2
-        mainController.render(player.getCurrentTime());
+        //mainController.render(player.getCurrentTime());
 
         //tracking engine v1
         //if (trackDataReady != false) {
@@ -251,7 +262,7 @@ function updatePlayerInfo() {
 
 
 //------------------END of youtube API functions------------------
-var trackingAds = [];
+//var trackingAds = [];
 //var trackDataReady = false;
 
 function moviCanvasController(_scaler, _sessionToken) {
