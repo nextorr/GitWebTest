@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>object response Testing</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+</head>
+<body id="myBody">
+    <p>Testing if we can receive an array of arbitrary objects</p>
+    <button type="button" onclick="callServiceReceive()">Call receiveAny</button>
+    <button type="button" onclick="callServiceSendWrapped()">Call sendWrapped</button>
+    <button type="button" onclick="callServiceReceiveMovi()">Call receiveMoviData</button>
+    <button type="button" onclick="callServiceSendMovi()">Call sendMoviData</button>
+    <script type="text/javascript">
+        var serviceValue;
+        function callServiceReceive() {
+            $.ajax({
+                url: "http://moviserver.cloudapp.net/service1.svc/web/anyOutput",
+                type: "POST",
+                cache: false,
+                //CARE: the parameter name MUST match the parameter definition on wcf
+                //when the service receives no parametes we can ommit the data declaration
+                //or declare it empty, either works
+                //data: JSON.stringify({
+                //    //this is an existin project, this id must come from the session.
+                //    //projectToken: queryToken,
+                //}),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                processData: true,
+                //note: complete responds with data.responseJSON
+                // success responds with data directly
+                success: function (data) {
+                    serviceValue = data;
+                    for (var i = 0; i < serviceValue.d.length ; i++) {
+                        $('#myBody').append('<p>' + i.toString() + ' .objeto recibido' +
+                            serviceValue.d[i].content.__type.split(":", 1)[0] + '</p>');
+                    }
+
+                    alert('get highlight success');
+
+                },
+                error: function (response) {
+                    alert('Failed: ' + response.statusText);
+                }
+            });
+        }
+
+        function callServiceSendWrapped()
+        {
+            var internalHL = {
+                title: "primer HL",
+                content: "contenido 1",
+                startTime: 1,
+                endTime: 2,
+                trackData: null
+            };
+            var internalHL2 = {
+                title: "Segundo HL",
+                content: "contenido 2",
+                startTime: 1,
+                endTime: 2,
+                trackData: null
+            };
+
+            var internalCA1 = {
+                title: "tercer CA",
+                content: "contenido 3",
+                startTime: 1,
+                endTime: 2,
+                link: "http://www.google.com",
+                visibleAtStart: true,
+                trackData: null
+            };
+            var internalCA2 = {
+                title: "cuarto CA",
+                content: "contenido 4",
+                startTime: 1,
+                endTime: 2,
+                link: "http://www.google.com",
+                visibleAtStart: true,
+                trackData: null
+            };
+            var infoToSend = {
+                highlights: [internalHL, internalHL2],
+                clickableArea: [internalCA1, internalCA2]
+            };
+            $.ajax({
+                url: "http://moviserver.cloudapp.net/service1.svc/web/wrappedInput",
+                type: "POST",
+                cache: false,
+                //CARE: the parameter name MUST match the parameter definition on wcf
+                //when the service receives no parametes we can ommit the data declaration
+                //or declare it empty, either works
+                data: JSON.stringify({
+                    parameters: infoToSend
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                processData: true,
+                //note: complete responds with data.responseJSON
+                // success responds with data directly
+                success: function (data) {
+                    serviceValue = data;
+                    $('#myBody').append('<p>' +' Objeto recibido:' +
+                            serviceValue.d + '</p>');
+                    alert('get highlight success');
+
+                },
+                error: function (response) {
+                    alert('Failed: ' + response.statusText);
+                }
+            });
+        }
+
+        function callServiceReceiveMovi()
+        {
+            $.ajax({
+                url: "http://moviserver.cloudapp.net/service1.svc/web/moviOutput",
+                type: "POST",
+                cache: false,
+                //CARE: the parameter name MUST match the parameter definition on wcf
+                //when the service receives no parametes we can ommit the data declaration
+                //or declare it empty, either works
+                data: JSON.stringify({
+                    
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                processData: true,
+                //note: complete responds with data.responseJSON
+                // success responds with data directly
+                success: function (data) {
+                    serviceValue = data;
+                    for (var i = 0; i < serviceValue.d.dataStream.length ; i++) {
+                        $('#myBody').append('<p>' + i.toString() + ' .objeto recibido ' +
+                            serviceValue.d.dataStream[i].__type.split(":", 1)[0] + '</p>');
+                    }
+                    alert('get highlight success');
+
+                },
+                error: function (response) {
+                    alert('Failed: ' + response.statusText);
+                }
+            });
+        }
+        var Highlight = function () {
+            this.__type = "moviDerivedHL:#moviProcessingLibrary";
+            this.title = "probando";
+            this.content = "objetos";
+            this.link = "http://www.google.com";
+            
+        };
+        Highlight.prototype.noise = function () {return "some noiiise" };
+
+        function callServiceSendMovi()
+        {
+            var internalHL =
+            {
+                __type: "moviDerivedHL:#moviProcessingLibrary",
+                title: "hola",
+                content: "mundo ",
+                link: "http://www.google.com",
+            };
+            var internalBM =
+            {
+                __type: "moviDerivedBM:#moviProcessingLibrary",
+                title: "oh",
+                content: "my ",
+            };
+            var infoToSend =
+            {
+                dataStream: [internalBM, internalHL, new Highlight]
+            };
+            $.ajax({
+                url: "http://moviserver.cloudapp.net/service1.svc/web/moviInput",
+                type: "POST",
+                cache: false,
+                //CARE: the parameter name MUST match the parameter definition on wcf
+                //when the service receives no parametes we can ommit the data declaration
+                //or declare it empty, either works
+                data: JSON.stringify({
+                    parameters: infoToSend
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                processData: true,
+                //note: complete responds with data.responseJSON
+                // success responds with data directly
+                success: function (data) {
+                    serviceValue = data;
+                    $('#myBody').append('<p>' + ' Objeto recibido:' +
+                            serviceValue.d + '</p>');
+                    alert('get highlight success');
+
+                },
+                error: function (response) {
+                    alert('Failed: ' + response.statusText);
+                }
+            });
+        }
+
+    </script>
+</body>
+
+</html>

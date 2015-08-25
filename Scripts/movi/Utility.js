@@ -244,7 +244,7 @@ function moviUserControls(_rootElementID) {
         triggerEditedEvent(highLightId, callerId, title, content, startTime, endTime);
     }
    
-
+    
     function triggerAddedEvent(_elementId, _title, _content,_startTime, _endTime) {
         $.event.trigger({
             type: "moviUserControlAdded",

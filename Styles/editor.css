@@ -1,21 +1,27 @@
 ﻿#container{
     width: 1280px;
-    height: 720px;
+    height: 504px;
     border: 1px solid ;
 }
 #toolBox {
     box-shadow:0px 0px 0px 1px red inset;
-    width: 25%;
+    width: 15%;
     height : 100%;
     float: left;
-    padding:5px;
+    padding:1px;
     box-sizing: border-box;
 }
+
+#toolBox button{
+    margin-bottom:2px;
+}
+
 #moviPlayer {
     box-shadow:0px 0px 0px 1px green inset;
     float:left;
     width: 75%;
     height : 80%;
+
 }
 #credits{
     border-color:yellow;
@@ -42,14 +48,14 @@
 }
 #videoContainer{
     box-shadow:0px 0px 0px 1px lightgreen inset;
-    width:60%;
-    height:80%;
+    width:70%;
+    height:100%;
     float:left;
 }
 #moviControl{
     box-shadow:0px 0px 0px 1px lightgray inset;
     width:15%;
-    height: 80%;
+    height: 100%;
     float:left;
 }
 .resultElement{
@@ -74,4 +80,64 @@
 .waitingBanner{
     visibility:visible;
     display: none;
+}
+
+.moviCommentForm {
+    margin-left:5px;
+    margin-right:10px;
+    /*border: 2px solid;
+    border-color:black;*/
+}
+
+.moviCommentForm p{
+    margin-bottom: 2px;
+    margin-top:0px;
+}
+
+.moviCommentForm input[type=text]{
+    width:100%;
+    display:block;
+    padding-left:0;
+    margin-left:0;
+}
+
+.moviCommentForm input[type=url]{
+    width:100%;
+    display:block;
+    padding-left:0;
+    margin-left:0;
+}
+
+.moviCommentForm textarea{
+    height: 50px;
+    width: 100%;
+    overflow:auto;
+    padding-left:0;
+    margin-left:0;
+}
+.startTimeArea {
+    width:50%;
+    float:left;
+    margin-bottom: 2px;
+    margin-top:0px;
+}
+.endTimeArea{
+    width:50%;
+    float:left;
+    margin-bottom: 2px;
+    margin-top:0px;
+}
+
+.getTimeButton{
+    padding-left:2px;
+    padding-right:2px;
+    padding-bottom:1px;
+}
+
+.moviCommentForm input[type=time]{
+    width:75%;
+    display:block;
+    padding-left:0;
+    margin-left:0;
+    float:left;
 }

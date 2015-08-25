@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>testing methods to sync JS code objects with the DOM</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+</head>
+<body>
+    <h1>testing objects IDs</h1>
+    <p>testing what id is assigned when a dom element is created</p>
+    <!--at the basic level we must define a common structure that the system can rely on-->
+    <!-- so we define that a tool must be defined by a button that enables the tool -->
+    <!-- and inmediately after a DIV that defines the tool -->
+    <!-- the idea is that we can use generic initializator later in the code -->
+    <button type="button" class="moviTool" id="highlightForm">Highlight</button>
+    <div id="highlightForm" class="moviForm">
+        <p>
+            <label for="title">Title:</label><br />
+            <input id="title" type="text" name="title" maxlength="25" value="Titulo" class="title" required>
+        </p>
+        <p>
+            <label for="dsc">Content:</label><br />
+            <textarea id="dsc" name="dsc" maxlength="160" required class="content">contenido</textarea>
+        </p>
+        <p>
+            <label for="tel">Link:</label><br />
+            <input id="tel" type="number" name="tel" value="123456" class="telephone">
+        </p>
+        
+        <button class="populate" type="button" >populate</button>
+        <button class="clear" type="button">clear</button>
+        <button class="createElement" type="button" >create Element</button>
+        <button class="editElement" type="button">Edit Element</button>
+        <button class="send" type="button" onclick="sendToServiceClick()">send</button>
+        
+    </div>
+    <div id="myDiv"></div>
+    <script type="text/javascript">
+        var mainController = controller('myDiv');
+
+        //jquery event initialization
+        //IDEA: to avoid creating an ID for every element that has common functionality
+        //we refer to it by its containing div an then by the commmon class
+        //this is a tradeof, if we want automatic creation the HTML definition must 
+        //follow a defined structure, if we want flexilibity in the HTML structure
+        //the system CANT make automatic desicions.
+        $('.moviForm').find('.populate').click(function (event) {
+            populateClick(event);
+        });
+        $('.moviForm').find('.clear').click(function (event) {
+            clearClick(event);
+        });
+        $('.moviForm').find('.createElement').click(function (event) {
+            createElementClick(event);
+        });
+        
+
+        function randomIdGenerator() {
+            var randLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            return uniqid = randLetter + Date.now();
+
+        }
+
+        //IDEA: a service for random words?
+        function populateClick(e) {
+            //even though the form definition must follow a pre-defined structure
+            //here must use the specifics of the definition, which are unknown.
+            var parentForm = $(e.target).parent().get(0);
+            switch ($(parentForm).attr('id')) {
+                case "highlightForm":
+                    $(parentForm).find('.title').val("HL title");
+                    $(parentForm).find('.content').val("HL content");
+                    $(parentForm).find('.telephone').val(Date.now());
+                    break;
+                default:
+                    //this default behaviour is intended to be used as a debugger helper
+                    //additionally will alert us that we have not defined the specifics of this behaviour
+                    $(parentForm).find('input, textarea').val("Behaviour Not Defined");
+                    break;
+            }
+        }
+
+
+        //Here we dont need specific behaviour so we can hapilly define a generic without problem
+        function clearClick(e) {
+            $(e.target).parent().find('input, textarea').val("");
+        }
+
+        function sendToServiceClick() {
+            mainController.sendToService();
+        }
+
+
+        //here we implement the specifics so the engine can use generics
+        //also the idea of this function os to perform housekeeping.
+        //all the data manipulation is defined on the object
+        function createElementClick(e) {
+            var parentForm = $(e.target).parent().get(0);
+            var myInstance;
+            switch ($(parentForm).attr('id')) {
+                case "highlightForm":
+                    myInstance = new HlObj(parentForm);
+                    mainController.addElement(myInstance);
+                    break;
+                default:
+                    //this default behaviour is intended to be used as a debugger helper
+                    //we send the base object
+                    //additionally will alert us that we have not defined the specifics of this behaviour
+                    //so we create a base object and add it to the engine
+                    myInstance = new HlObj({});
+                    break;
+            }
+            
+        }
+
+        //housekeeping to control de UI display order
+        //the specific data manipulation were defined on the object declaration
+        function updateForm(moviObjectInstance) {
+            //enable and disable buttons accordingly
+            //attach an event handler with the
+            $(moviObjectInstance.form).find('.editElement').click(function (event) {
+                moviObjectInstance.updateDom();
+            });
+        }
+
+        function updateElementClick(e) {
+
+        }
+
+        //so, we define that the object receives a reference to the defining form
+        var HlObj = function (moviForm) {
+            //the object controls all aspects of the UI interaction starting here from de declaration
+            this.form = moviForm;
+            this.title = $(moviForm).find('.title').val() || "Not defined";
+            this.content = $(moviForm).find('.content').val() || "Not defined";
+            this.telephone = $(moviForm).find('.telephone').val() || "Not defined";
+        };
+
+        HlObj.prototype.addToDom = function (rootElementID) {
+            var itemID = randomIdGenerator();
+            this.elementID = itemID;
+            $('#' + rootElementID).append('<h2 id = ' + itemID + '>' + this.title + '</h2>' +
+                '<div>' + '<p>' + this.content + '</p>' +
+                '<p>' + this.telephone.toString() + '</p>' +
+                '<button type="button" >Edit Element</button>' +
+                '</div>');
+            $('#' + itemID).next().find('button').click(this, function (event) {
+                //calling the HlObj.populate
+                event.data.populate();
+                //editElementClick(itemID);
+            });
+            return itemID;
+        };
+
+        HlObj.prototype.editDom = function (itemID, _title, _content,_telephone) {
+            
+            $('#' + itemID).text(_title);
+            $('#' + itemID).next().find('p').first().text(_content);
+            $('#' + itemID).next().find('p').last().text(_telephone);
+            this.title = _title;
+            this.content = _content;
+            this.telephone = _telephone;
+            return itemID;
+        };
+
+        HlObj.prototype.populate = function () {
+            //IDEA: the controller does not care if the info in the object and its HTML 
+            //representation changes, so its ok to bypass the controller here and manipulate
+            //data and HTML directly
+            $(this.form).find('.title').val(this.title);
+            $(this.form).find('.content').val(this.content);
+            $(this.form).find('.telephone').val(this.telephone);
+            updateForm(this);
+        };
+
+        HlObj.prototype.updateDom = function () {
+            
+            this.title = $(this.form).find('.title').val() || "update failed";
+            this.content = $(this.form).find('.content').val() || "update failed";
+            this.telephone = $(this.form).find('.telephone').val() || "update failed";
+
+            $('#' + this.elementID).text(this.title);
+            $('#' + this.elementID).next().find('p').first().text(this.content);
+            $('#' + this.elementID).next().find('p').last().text(this.telephone);
+
+            //remove the click event from the editbutton to avoid call nesting
+            //TODO: move this to a completed handler in the UI coordinator?
+            $(this.form).find('.editElement').off("click");
+            
+            return this.elementID;
+        };
+
+        HlObj.prototype.sendString = function(){
+            return "this send to full: " + this.title + this.content + this.telephone.toString();
+        }
+        
+
+        function controller(rootElementID) {
+            var internalObjects = [];
+            var dictionary = new Object();
+
+            //we are reducin the number of places that requiere to be changed
+            //in order to implement a new format.
+            //so the idea here is that this function is generic 
+            //and the specifics are defined in the object
+            function addElement(moviObj) {
+                var domID = moviObj.addToDom(rootElementID);
+                internalObjects.push(moviObj);
+                //the object per se acts like a dictionary
+                dictionary[domID.toString()] = moviObj;
+            }
+
+            function editElement(domID, _title, _content, _tel) {
+                dictionary[domID].editDom(domID, _title, _content, _tel);
+            }
+
+            function sendToService() {
+                var message="";
+                //for (var property in dictionary) {
+                //    if (dictionary.hasOwnProperty(property)) {
+                //        message += dictionary[property].sendString();
+                //    }
+                //}
+                for(var element = 0; element < internalObjects.length;element++){
+                    message += internalObjects[element].sendString();
+                }
+                $('#' + rootElementID).append('<p>' + 'el mensaje es: ' + message + '</p>');
+            }
+
+            function getInternalDictionary() {
+                return dictionary;
+            }
+
+            function getInternalArray() {
+                return internalObjects;
+            }
+
+            return {
+                addElement: addElement,
+                getInternalArray: getInternalArray,
+                editElement: editElement,
+                sendToService: sendToService,
+            }
+        }
+    </script>
+</body>
+</html>

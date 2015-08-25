@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Jquery validation testing</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script type="text/javascript" src="../Scripts/validation/jquery.validate.js"></script>
+    
+    <style type="text/css">
+        #commentForm {
+            margin:10px;
+            /*border: 2px solid;
+            border-color:black;*/
+        }
+        #commentForm p{
+            margin-bottom: 5px;
+            margin-top:5px;
+            
+        }
+        #commentForm input[type=text]{
+            width:100%;
+            display:block;
+            padding-left:0;
+            margin-left:0;
+        }
+        #commentForm textarea{
+            height: 100px;
+            width: 100%;
+            overflow:auto;
+            padding-left:0;
+            margin-left:0;
+        }
+        #moviForm {
+            background-color: lightgreen;
+            width : 300px;
+            height : auto;
+            border: 2px solid;
+            border-color:black;
+        }
+    </style>
+</head>
+<body>
+    <h1>testing form</h1>
+    <div id="moviForm">
+        <form id="commentForm" action="" method="get">
+            
+                <p>
+                    <label for="GET-title">Title:</label><br />
+                    <input id="GET-title" type="text" name="name" minlength="3">
+                </p>
+                <p>
+                    <label for="GET-content">Content:</label><br />
+                    <textarea id ="GET-content" name="name" maxlength="1000"></textarea>
+                </p>
+                <p>
+                    <label for="GET-link">Link:</label><br />
+                    <input id="GET-link" type="text" name="name" minlength="3">
+                </p>
+
+                <button type="button" id="moviSubmit"> guardar </button>
+                <button type="button" id="moviText">Ver Texto</button>
+                <input id="moviButton" class="submit" type="submit" value="Submit">
+            
+        </form>
+    </div id="moviForm">
+    <script type="text/javascript">  
+        $("#commentForm").validate();
+        $('#moviButton').click(function () {
+            //$("#commentForm").validate({
+            //    submitHandler: function (form) {
+            //        alert("the submit was clicked and valid");
+            //        //form.submit();
+            //    }
+            //});
+        });
+
+        $('#moviSubmit').click(function () {
+            alert("Valid:" + $("#commentForm").valid());
+        });
+
+        $('#moviText').click(function () {
+            alert($('#GET-content').val());
+        });
+        
+    </script>
+</body>
+</html>

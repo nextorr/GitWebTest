@@ -1,15 +1,30 @@
 ﻿.accordion
 {
     overflow-y: auto;
-    position: relative;}
-    .accordion a{display: block; text-decoration: none;}
-    .accordion h2{background-color: #fff; background-image: url(../img/gradient.jpg);
+    position: relative;
+
+}
+.accordion a
+{
+    display: block; text-decoration: none;
+
+}
+.accordion h2
+{
+    background-color: #fff; background-image: url(../img/gradient.jpg);
     background-image: -moz-linear-gradient(bottom, #f1f1f1, #fff);
     background-image: -ms-linear-gradient(bottom, #f1f1f1, #fff);
     background-image: -o-linear-gradient(bottom, #f1f1f1, #fff);
     background-image: -webkit-linear-gradient(bottom, #f1f1f1, #fff);
     background-image: linear-gradient(bottom, #f1f1f1, #fff); border-top: 1px solid #ddd;
-    color: #222; font: 14px/30px 'Verdana', sans-serif; height: 30px; margin: 0; padding: 0; text-indent: 10px;}
+    color: #222; font: 14px/30px 'Verdana', sans-serif; height: 30px; margin: 0; padding: 0; text-indent: 10px;
+
+}
+
+.accordion h2.updating
+{
+    box-shadow:0px 0px 0px 2px green inset;
+}
 .accordion p{
     color: #555; 
     font: 12px/18px 'Verdana', sans-serif; 
