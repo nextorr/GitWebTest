@@ -20,26 +20,18 @@
             </div>
         </div>
     </div>
-    <!-- load here the scripts because they need the DOM elements to be loaded -->
-    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
-    <script type="text/javascript" src="../Scripts/movi/moviPlayer.js"></script>
 
     <!-- page specific scripts -->
     <script type="text/javascript">
-        //url parameters initialization
-        var urlParameters = queryString(window.location.search.substr(1).split('&'));
-        if (urlParameters["token"] != null) {
-            var idToken = urlParameters["token"];
-        }
-        else
-        {
-            //WARNING: this default is for testing 5/06/2015, it 'might not exist'
-            var idToken = 'o'
-        }
-        
-        var mainController = moviPlayerController("moviControl", 1280, 720, idToken)
-        
-
+        //player variable initialization
+        var rootID = "moviControl";
+        var projectDefault = 'o';
+        var youtubeVideoURL = 'RaQa201Hezs';
+        var videoSourceWidth = 1280;
+        var videoSourceHeight = 720;
     </script>
+    <!-- load here the scripts because they need the DOM elements to be loaded -->
+    <script type="text/javascript" src="../Scripts/movi/Utility.js"></script>
+    <script type="text/javascript" src="../Scripts/movi/moviPlayer.js"></script>
 </body>
 </html>

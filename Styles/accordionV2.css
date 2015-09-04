@@ -1,0 +1,57 @@
+﻿.goToTimeline{
+    color: #ddd;
+    font-weight: bold;
+    font: 12px/18px 'Verdana', sans-serif;
+    padding: 10px 5px;
+    margin-bottom: 0px;
+    cursor: pointer;
+}
+
+.accordion
+{
+    /*box-shadow:0px 0px 0px 1px lightgreen inset;*/
+    border-left: 1px solid #808080;
+    float:left;
+    width: 20%;
+    height: 100%;
+    overflow-y: auto;
+    position: relative; 
+}
+    .accordion a{
+        text-decoration: none; 
+        text-align:center;
+        padding:10px 5px; 
+    }
+    .accordion h2
+    {
+    overflow:   hidden;
+    white-space: nowrap;
+    background-color: #232323;
+    border-top: 2px solid #808080;
+    text-overflow:  ellipsis;
+    color: #ddd; font: 14px/30px 'Verdana', sans-serif; height: 30px; margin: 0; padding: 0; text-indent: 10px;
+    cursor: pointer;
+    }
+.accordion div{
+    background-color: #232323;
+}
+.accordion p{
+    color: #ddd; 
+    font: 12px/18px 'Verdana', sans-serif; 
+    padding:10px 5px; 
+    margin-bottom: 0px;
+    cursor: pointer;
+
+}
+.moviGrid {
+    padding: 0px;
+    margin:0px;
+    border-collapse: collapse;
+}
+.moviGrid tr td{
+    vertical-align: top;
+    padding: 0px;
+    margin:0px;
+    border-collapse: collapse;
+}
+

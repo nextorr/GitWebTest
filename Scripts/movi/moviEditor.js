@@ -1,7 +1,7 @@
 ﻿/// <reference path="../jquery21/jquery-2.1.0-vsdoc.js" />
 
 //TODO: call this function when the document is ready
-moviEditorInitialization();
+//moviEditorInitialization();
 
 
 var mainController = new moviEditorController(rootID, youtubeVideoURL, videoSourceWidth, videoSourceHeight);
@@ -30,7 +30,17 @@ var moviToolsControler = function () {
         });
         
         $('.toolContainer').find('.toolForm').find('.enableTrackEditorBtn').click(function () {
-            enableTrackEditor();
+            mainController.enableTrackTool();
+        });
+        $('.toolContainer').find('.toolForm').find('.moviStartTime').change(function (event) {
+            statTimeChange(event);
+        });
+        $('.toolContainer').find('.toolForm').find('.moviEndTime').change(function (event) {
+                endTimeChange(event);
+        });
+        $('.toolContainer').find('.toolForm').find('.getTimeButton').click(function (event) {
+            $(event.target).prev().val(getPlayerTime);
+            $(event.target).prev().change();
         });
         $('.toolContainer').find('.toolForm').validate({
             submitHandler: function (form) {
@@ -40,7 +50,7 @@ var moviToolsControler = function () {
                 //form.submit();
             }
         });
-        $('#publishButton').click(function () { publishData() });
+        $('#publishButton').click(function () { mainController.storeData(); });
     }());
     //-------------------------------------------------------------------------------
     //here we implement the specifics so the engine can use generics
@@ -71,6 +81,12 @@ var moviToolsControler = function () {
                 $(this).slideToggle();
             }
         });
+
+        //this condition is needed to avoid breaking the time logic validation.
+        $('.toolContainer').find('.toolForm').find('.moviStartTime').val("0");
+        
+        $('.toolContainer').find('.toolForm').find('.moviEndTime').val(getPlayerDuration() || "1");
+
         //enable the incative button
         $(".toolButton").each(function () {
             if ($(this).attr("disabled") == "disabled") {
@@ -84,6 +100,7 @@ var moviToolsControler = function () {
     }
     //-------------------------------------------------------------------------------
     function addObjectToDomClick(e) {
+        
         if (!$(e.target).parent().valid())
         {
             return;
@@ -101,10 +118,45 @@ var moviToolsControler = function () {
         $(e.target).parent().parent().prev().removeAttr("disabled");
     }
     //-------------------------------------------------------------------------------
+    function statTimeChange(e) {
+        //e.target -> start time input
+        //parent().parent() gets me to the .toolForm
+        var data = $(e.target).parent().parent().find('.moviEndTime');
+        //empty value handling
+        if ($(e.target).val() == "")
+        {
+            $(e.target).val("0");
+        }
+        if (parseFloat($(data).val()) > parseFloat($(e.target).val()))
+        {
+            $(e.target).val(mainController.setStartTime($(e.target).val()));
+        }
+        else
+        {
+            $(e.target).val(parseFloat($(data).val()) - 0.1);
+        }
+    }
+    //-------------------------------------------------------------------------------
+    function endTimeChange(e) {
+        //e.target -> end time imput
+        //parent().parent() gets me to the .toolForm
+        var data = $(e.target).parent().parent().find('.moviStartTime');
+        if ((parseFloat($(e.target).val()) > parseFloat($(data).val())) && $(e.target).val() != "")
+        {
+            $(e.target).val(mainController.setEndTime($(e.target).val()));
+        }
+        else
+        {
+            $(e.target).val(parseFloat($(data).val()) + 0.1);
+        }
+    }
+    //-------------------------------------------------------------------------------
 
     //---------------------Public functions------------------------------------------
     return {
         showToolContainerUpdate: function (targetForm, _moviObject) {
+            //put the main controler in update mode
+            mainController.updateMoviObject(_moviObject);
             //perform the UI control actions
             if (($(targetForm).css("display") != "inline-block") &&
                 ($(targetForm).css("display") != "block"))
@@ -138,7 +190,7 @@ var moviToolsControler = function () {
 
             //bind the click event to the object representation.
             $(targetForm).find('.toolForm').find('.updateDomButton').click(function (event) {
-                _moviObject.updateDomObject(event);
+                mainController.updateUserControlDOM();
                 //perform the UI control actions
                 //clear the boxes
                 $(targetForm).find('.toolForm').find("textarea").val("");
@@ -150,6 +202,9 @@ var moviToolsControler = function () {
                 $(targetForm).slideToggle();
                 //enable the caller Tool button
                 $(targetForm).prev().removeAttr("disabled");
+                //remove the binded click event on the caller to prevent nesting
+                //TODO: this event can be removed in the click handler itself?
+                $(event.target).off("click");
             });
             
             
@@ -163,201 +218,6 @@ var moviToolsControler = function () {
 
 //***********************END SINGLETON: MOVI TOOLS CONTROLLER*******************************************
 //******************************************************************************************************
-
-
-
-
-function moviEditorInitialization() {
-    var pivot = document.getElementById("moviEditor");
-    //replace the id to be used by the youtube player
-    pivot.id = "player";
-    
-    //initializing all the components, routing events 
-    //and variuos housekeeping
-    $('#highlightForm').slideToggle(0);
-    $('#highlightFormV2').slideToggle(0);
-    $('#bookmarkForm').slideToggle(0);
-
-    //private data initialization for the requiered elements
-    $('#highlightEditor').attr("data-toggleCall", "false");
-
-    //event initialization for all the HTML elements
-    $('#highlightEditor').click(function (event) { showControl(event); });
-    $('#bookmarkEditor').click(function (event) { showControl(event); });
-    $('#highlightEditorV2').click(function (event) { showControl(event); });
-    $('#saveHL').click(function () { saveHighlight(); });
-    $('#editHL').click(function () { editHighlight(); });
-    $('#publishButton').click(function () { publishData() });
-
-    //common actions 
-    //this actions are selected by class because 
-    //they are common across the different input forms
-    //this makes sure the end time is alway greater than the start time
-    $('.enableTrackEditorBtn').click(function () { enableTrackEditor(); });
-    
-
-    //form validation functions
-    $("#commentForm").validate({
-        submitHandler: function (form) {
-            //avoid the form to be submmited
-            alert("the button was clicked");
-            //form.submit();
-        }
-    });
-
-    //TODO: marked for deletion
-    //$('.addToDomButton').click(function () {
-    //    //read if the form is valid
-    //    alert("Valid:" + $("#commentForm").valid());
-    //});
-
-    //setting up the time control functions
-    $('#endTime').change(function () {
-        if (($('#endTime').val() > $('#startTime').val()) && $('#endTime').val()!="") {
-            $('#endTime').val(mainController.setEndTime($('#endTime').val()));
-        }
-        else {
-            $('#endTime').val(parseFloat($('#startTime').val()) + 0.1);
-        }
-    });
-    $('#startTime').change(function () {
-        //control empty values
-        if ($('#startTime').val() == "")
-        {
-            $('#startTime').val("0");
-        }
-        if (($('#endTime').val() > $('#startTime').val())) {
-            //Do not let the user change the start time if it comes from the trackArea
-            //$('#endTime').val(mainController.setEndTime($('#endTime').val()));
-        }
-        else {
-            $('#startTime').val(parseFloat($('#endTime').val()) - 0.1);
-        }
-    });
-    //this enables the user to use the player current time as a time setter
-    $('.getTimeButton').click(function (e) {
-        //the button is always preceded by the input tag
-        //$(e.target).prev().val(getPlayerTime());
-        switch (e.target.id) {
-            case "startTimeButton":
-                if (getPlayerTime() < $('#endTime').val())
-                {
-                    $(e.target).prev().val(getPlayerTime());
-                    $(e.target).prev().trigger("change");
-                }
-                else
-                {
-                    alert('el tiempo inicial debe ser menor al tiempo final');
-                }
-                break;
-
-            case "endTimeButton":
-                if (getPlayerTime() > $('#startTime').val()) {
-                    $(e.target).prev().val(getPlayerTime());
-                    $(e.target).prev().trigger("change");
-                }
-                else
-                {
-                    alert('el tiempo final debe ser mayor al tiempo inicial');
-                }
-                break;
-        }
-    });
-
-
-    function saveHighlight() {
-        if (!$("#commentForm").valid())
-        {
-            return;
-        }
-        mainController.addUserControlToDOM({
-            title: $('#title').val(),
-            content: $('#dsc').val(),
-            startTime: $('#startTime').val(),
-            endTime: $('#endTime').val(),
-        })
-
-        //clear the boxes
-        $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
-        $('#highlightForm').slideToggle();
-        //enable the button
-        $('#highlightEditor').removeAttr("disabled");
-    }
-
-    function editHighlight() {
-        userController.editHighlight($('#controlToEditId').text(), $('#callerControlId').text(), $('#title').val(), $('#dsc').val(), $('#startTime').val(), $('#endTime').val())
-        $('#title').val(""); $('#dsc').val(""); $('#startTime').val(""); $('#endTime').val("");
-        $('#editHL').attr("disabled", "disabled");
-        $('#saveHL').removeAttr("disabled");
-    }
-
-    function enableTrackEditor() {
-        mainController.enableTrackTool();
-    }
-
-    //TODO: show control on update mode
-    function showControl(e) {
-        
-        switch (e.target.id) {
-            case "highlightEditor":
-                toolVisualization("#highlightForm", e.target);
-                //TODO: Send and object instance.
-                mainController.selectToolMode("highlight", "new");
-                break;
-
-            case "highlightEditorV2":
-                toolVisualization("#highlightFormV2", e.target);
-                mainController.selectToolMode("highlight", "new");
-                break;
-
-            case "bookmarkEditor":
-                toolVisualization("#bookmarkForm", e.target);
-                mainController.selectToolMode("bookmark", "new");
-                break;
-        }
-        
-    }
-
-    function publishData() {
-        mainController.storeData();
-        //$('#publishButton').attr("disabled", "disabled");
-    }
-}
-//-------------------SOME UTILITY FUNCTIONS--------------------
-//enables the toolID while disables the other ones
-//this works on any number of buttons and controls
-//as long as they keep the defined class naming
-function toolVisualization(toolID, buttonReference) {
-    //hide the active form
-    //and clear the entered user values
-    $('.moviForm').each(function () {
-        if (($(this).css("display") == "inline-block") || ($(this).css("display") == "block")) {
-            $(this).find("textarea").val("");
-            $(this).find("input").val("");
-            $(this).slideToggle();
-        }
-    });
-    //enable the incative button
-    $(".toolElement").each(function () {
-        if ($(this).attr("disabled") == "disabled") {
-            $(this).removeAttr("disabled");
-        }
-    });
-    //enable the caller
-    $(toolID).slideToggle();
-    //disable the caller buttons
-    $(buttonReference).attr("disabled", "disabled");
-}
-//render the given end time at the current active form
-function setActiveEndTime(_endTime) {
-    $('.moviForm').each(function () {
-        if (($(this).css("display") == "inline-block") || ($(this).css("display") == "block")) {
-            $(this).find(".endTime").val(_endTime);
-        }
-    });
-}
-
-//-------------------END OF SOME UTILITY FUNCTIONS-------------
 
 //******************************************************************************************************
 //*********************START CLOSURE: UPDATE DELETE CONTROLLER******************************************
@@ -484,8 +344,6 @@ function updatePlayerInfo() {
 function moviCanvasController(_scaler, _sessionToken) {
     //TODO: lazy apporach calling directly the DOM elements
     //to be cleaner use references instead 
-    
-
     var diabled = true;
     var areaInstance;
 
@@ -685,26 +543,11 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler, _sessionTok
                     Ybr: data.d.Ybr,
                     timeLine: data.d.timeLine
                 };
-                //this supports the twitter api
-                //TODO: we need a clean way to support this in the code
-                //meanwhile just sent and empty list
-                //trackingAds.push(new Visualization(data.d, counter, parentSVG, getTweets(data.d.token)));
-
-                //tracking engineV1 as 2/06/2015
-                //trackingAds.push(new moviTrackedUserControl(parentSVG.get(0), receivedTrack));
-                //trackDataReady = true;
 
                 //tracking engineV2
                 //TODO: make sure this object exists on the model
                 mainController.addTrack(parentSVG.get(0), receivedTrack);
-                //TODO: this cross references are ok?
-                // canvas controller is a global but is used as a really
-                //needed definition for the front and to work properly
-                //canvasController.toggle();
-
-                // write the end time to the text box
-                setActiveEndTime(data.d.timeLine[data.d.timeLine.length - 1]);
-                //$('#endTime').val(data.d.timeLine[data.d.timeLine.length-1])
+                
                 //temporary visual indication that the service succeded
                 alert('success');
 
@@ -725,138 +568,6 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler, _sessionTok
 }
 
 
-//this function is intended to be used on the editor as 27/05/2015
-function moviTrackedUserControl() {
-    var title;
-    var content;
-    var startTime;
-    var endTime;
-    var userControl;
-    var parentSvgDOM;
-    var trackData;
-    var hasTrack = false;
-    var rectangle;
-    var renderEndTime;
-
-    function render(time, offset) {
-        if (!hasTrack)
-        {
-            return;
-        }
-        var innerIndex = binaryIndexOf.call(trackData.timeLine, time);
-        //no render truncating
-        //if ((time < trackData.timeLine[0] || time > trackData.timeLine[trackData.timeLine.length - 1])) {
-        //    //the asked time is outside the timeLine definition, hide the rectangle
-        //    rectangle.collapse();
-        //}
-        //enable render truncating
-        if ((time < trackData.timeLine[0] || time > renderEndTime)) {
-            //the asked time is outside the timeLine definition, hide the rectangle
-            rectangle.collapse();
-        }
-        else if (offset == null) {
-            //draw the position without any offset
-            if (innerIndex < 0) {
-                rectangle.draw(trackData.Xtl[-innerIndex], trackData.Xbr[-innerIndex], trackData.Ytl[-innerIndex], trackData.Ybr[-innerIndex]);
-            } else {
-                rectangle.draw(trackData.Xtl[innerIndex], trackData.Xbr[innerIndex], trackData.Ytl[innerIndex], trackData.Ybr[innerIndex]);
-            }
-            //the parameter is the data to be sent to the areaVisible event handler
-            //TODO: a text is set until we implement the twitter functionality
-            rectangle.visible("tweet list");
-        }
-        else {
-            //draw the position applying the offset
-            //TODO: this only works on the standard wide screen ratio
-            if (innerIndex < 0) {
-                rectangle.draw(trackData.Xtl[-innerIndex] * offset, trackData.Xbr[-innerIndex] * offset, trackData.Ytl[-innerIndex] * offset, trackData.Ybr[-innerIndex] * offset);
-            } else {
-                rectangle.draw(trackData.Xtl[innerIndex] * offset, trackData.Xbr[innerIndex] * offset, trackData.Ytl[innerIndex] * offset, trackData.Ybr[innerIndex] * offset);
-            }
-            //the parameter is the data to be sent to the areaVisible event handler
-            //TODO: a text is set until we implement the twitter functionality
-            rectangle.visible("tweet list");
-        }
-    }
-
-    function setTrack(_parentSvgDOM, _trackData) {
-        parentSvgDOM = _parentSvgDOM;
-        trackData = _trackData;
-        renderEndTime = _trackData.timeLine[_trackData.timeLine.length - 1];
-        if (rectangle == null) {
-            rectangle = new trackingRectangle(parentSvgDOM);
-        }
-        hasTrack = true;
-    }
-
-
-    function setData(_title, _content, _startTime, _endTime) {
-        //save the info into the structure
-        title = _title;
-        content = _content;
-        startTime = _startTime;
-        endTime = _endTime;
-    }
-    function getFormattedData() {
-        var tempHighlight;
-        if (hasTrack)
-        {
-            tempHighlight = {
-                title: title,
-                content: content,
-                startTime: startTime,
-                endTime: endTime,
-                trackData: trackData,
-            };
-        }
-        else
-        {
-            tempHighlight = {
-                title: title,
-                content: content,
-                startTime: startTime,
-                endTime: endTime,
-                trackData: null,
-            };
-        }
-        return tempHighlight
-    }
-
-    function setRenderTime(time) {
-        if (!hasTrack) {
-            return time;
-        }
-        if (time < trackData.timeLine[trackData.timeLine.length - 1]) {
-            renderEndTime = time;
-            return renderEndTime;
-        }
-        renderEndTime = trackData.timeLine[trackData.timeLine.length - 1]
-        return renderEndTime;
-    }
-    function getRenderEndTime() {
-        return renderEndTime;
-    }
-    //clear the track data and removes the rectangle from the DOM
-    function clear() {
-        if (hasTrack) {
-            rectangle.removeFromDOM();
-        }
-    }
-
-    return {
-        render: render,
-        setData: setData,
-        setTrack: setTrack,
-        getFormattedData: getFormattedData,
-        setRenderTime: setRenderTime,
-        getRenderEndTime: getRenderEndTime,
-        clear: clear,
-    }
-
-}
-
-//UPDATE 1: implementing a new tracking object
-
 //******************************************************************************************************
 //***************************MOVI TRACKING OBJECT*******************************************************
 
@@ -866,7 +577,7 @@ var MoviTracking = function (_trackData, _parentSvgDOM) {
     this.trackData = _trackData;
     this.renderEndTime = _trackData.timeLine[_trackData.timeLine.length - 1];
     //trackingRectangle is a closure
-    this.rectangle = trackingRectangle(parentSvgDOM);
+    this.rectangle = trackingRectangle(_parentSvgDOM);
     
 };
 
@@ -914,19 +625,28 @@ MoviTracking.prototype.setRenderEndTime = function (time){
     return this.renderEndTime;
 };
 //-------------------------------------------------------------------------------------------------------
+MoviTracking.prototype.getStartTime = function () {
+    return this.trackData.timeLine[0];
+}
+//-------------------------------------------------------------------------------------------------------
+MoviTracking.prototype.getEndTime = function () {
+    return this.renderEndTime;
+};
+//-------------------------------------------------------------------------------------------------------
 //removes the rectangle from the DOM
 MoviTracking.prototype.clearDOM = function () {
     this.rectangle.removeFromDOM();
 };
 //-------------------------------------------------------------------------------------------------------
-MoviTracking.prototype.scaledCopy = function (_scalerFunction) {
+
+MoviTracking.prototype.scaledCopy = function (_scaler) {
     //TODO: error checking on _scalerFunction
     var innerIndex = binaryIndexOf.call(this.trackData.timeLine, this.renderEndTime);
-    var scaledTrackData = _scalerFunction(this.trackData.Xtl.slice(0, innerIndex), this.trackData.Ytl.slice(0, innerIndex),
+    var scaledTrackData = _scaler.scaleToStore(this.trackData.Xtl.slice(0, innerIndex), this.trackData.Ytl.slice(0, innerIndex),
         this.trackData.Xbr.slice(0, innerIndex), this.trackData.Ybr.slice(0, innerIndex));
     scaledTrackData.timeLine = this.trackData.timeLine.slice(0, innerIndex);
 
-    //TODO: check that scalerData has the desiref formar, otherwise return null or error.
+    //TODO: check that scalerData has the desired format, otherwise return null or error.
     return scaledTrackData;
 }
 
@@ -943,22 +663,27 @@ var MoviHighlight = function (_moviForm) {
     this.startTime = 0;
     this.endTime = 0;
     this.trackingRenderer = null;
+
 };
+
 //-------------------------------------------------------------------------------------------------------
 MoviHighlight.prototype.writeInfoToDOM = function (_rootElementId){
     //save the info into the service format structure
-    this.title = $(moviForm).find('.toolForm').find('.moviTitle').val() || "tool undefined";
-    this.content = $(moviForm).find('.toolForm').find('.moviContent').val() || "tool undefined"
+    //TODO: this default assigment is not working because if moviform is undefined we get
+    //an accessing undefined methods exception
+    //TODO: test how we can fix this
+    this.title = $(this.moviForm).find('.toolForm').find('.moviTitle').val() || "tool undefined";
+    this.content = $(this.moviForm).find('.toolForm').find('.moviContent').val() || "tool undefined"
     //TODO: if there is a track area make sure this times are coordinated
-    this.startTime = $(moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
-    this.endTime = $(moviForm).find('.toolForm').find('.moviEndTime').val() || 1;
+    this.startTime = $(this.moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
+    this.endTime = $(this.moviForm).find('.toolForm').find('.moviEndTime').val() || 1;
     //generate an ID so we can refer back to the item
     var itemID = randomIdGenerator();
     this.domID = itemID;
     //then render the info in the HTML DOM.
     $('#' + _rootElementId).prepend('<h2 id=' + itemID + '>' + this.title + '</h2>' +
         '<div>' +
-        '<p onclick="seekVideo(' + this.startTime + ')">' + this.content + '</p>' +
+        '<p>' + this.content + '</p>' +
         '<button class="moviUpdateElement" type="button" >Edit Element</button>' +
         '</div>');
     //enable the accordion functionality
@@ -991,32 +716,30 @@ MoviHighlight.prototype.writeInfoToDOM = function (_rootElementId){
 MoviHighlight.prototype.populateUpdater= function(){
     moviToolsControler.showToolContainerUpdate(this.moviForm, this);
     //fill the data in the form
-    $(moviForm).find('.toolForm').find('.moviTitle').val(this.title);
-    $(moviForm).find('.toolForm').find('.moviContent').val(this.content);
-    $(moviForm).find('.toolForm').find('.moviStartTime').val(this.startTime);
-    $(moviForm).find('.toolForm').find('.moviEndTime').val(this.startTime);
+    $(this.moviForm).find('.toolForm').find('.moviTitle').val(this.title);
+    $(this.moviForm).find('.toolForm').find('.moviContent').val(this.content);
+    $(this.moviForm).find('.toolForm').find('.moviStartTime').val(this.startTime);
+    $(this.moviForm).find('.toolForm').find('.moviEndTime').val(this.endTime);
 };
 //-------------------------------------------------------------------------------------------------------
-MoviHighlight.prototype.updateDomObject= function(e){
+MoviHighlight.prototype.updateDomObject= function(){
     //modify the DOM representation of the object
-    this.title = $(moviForm).find('.toolForm').find('.moviTitle').val() || "Update Failed";
-    this.content = $(moviForm).find('.toolForm').find('.moviContent').val() || "Update Failed"
+    this.title = $(this.moviForm).find('.toolForm').find('.moviTitle').val() || "Update Failed";
+    this.content = $(this.moviForm).find('.toolForm').find('.moviContent').val() || "Update Failed"
     //TODO: if there is a track area make sure this times are coordinated
-    this.startTime = $(moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
-    this.endTime = $(moviForm).find('.toolForm').find('.moviEndTime').val() || 1;
+    this.startTime = $(this.moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
+    this.endTime = $(this.moviForm).find('.toolForm').find('.moviEndTime').val() || 1;
 
+    //and update the DOM representation
     $('#' + this.domID).text(this.title);
     $('#' + this.domID).next().find('p').first().text(this.content);
     //TODO: the start time event is binded to this.startTime, so in theory we dont need to update the event
-
-    //TODO: call the coordinators for a completed update process
-
-    //remove the binded click event on the caller to prevent nesting
-    $(e.target).off("click");
 };
 //-------------------------------------------------------------------------------------------------------
 MoviHighlight.prototype.setTrack = function (_trackData, _parentSvgDOM) {
     this.trackingRenderer = new MoviTracking(_trackData, _parentSvgDOM);
+    //TODO: this belong here?
+    $(this.moviForm).find('.toolForm').find('.moviEndTime').val(this.trackingRenderer.getEndTime())
 };
 //-------------------------------------------------------------------------------------------------------
 MoviHighlight.prototype.setRenderTime = function (_time) {
@@ -1029,6 +752,16 @@ MoviHighlight.prototype.setRenderTime = function (_time) {
     return _time;
 };
 //-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.setStartTime = function (_time) {
+    if(this.trackingRenderer != null)
+    {
+        this.startTime = this.trackingRenderer.getStartTime();
+        return this.startTime;
+    }
+    this.startTime = _time;
+    return _time;
+}
+//-------------------------------------------------------------------------------------------------------
 //clear the track data and removes the rectangle from the DOM
 MoviHighlight.prototype.clear = function () {
     if (this.trackingRenderer != null) {
@@ -1037,6 +770,24 @@ MoviHighlight.prototype.clear = function () {
         this.startTime = 0;
         this.endTime = 0;
     }
+    //set this values for debugging purposes
+    this.title = "Cleared";
+    this.content = "Cleared";
+};
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.deleteDom = function () {
+    if (this.trackingRenderer != null) {
+        this.trackingRenderer.clearDOM();
+        this.trackingRenderer = null;
+        this.startTime = 0;
+        this.endTime = 0;
+    }
+    //set this values for debugging purposes
+    this.title = "Deleted";
+    this.content = "Deleted";
+    //delete the elements from the dom
+    $('#' + this.domID).next().remove();
+    $('#' + this.domID).remove();
 };
 //-------------------------------------------------------------------------------------------------------
 MoviHighlight.prototype.render = function (_time, _offset) {
@@ -1045,11 +796,12 @@ MoviHighlight.prototype.render = function (_time, _offset) {
     }
 };
 //-------------------------------------------------------------------------------------------------------
-MoviHighlight.prototype.storeFormat = function (scalerFunction) {
-    var formatToSend;
+MoviHighlight.prototype.storeFormat = function (scalerObject) {
+    var formatToSend = new Object();
+    formatToSend.__type = "moviHighlight:#moviDataLibrary";
     if (this.trackingRenderer != null)
     {
-        formatToSend.trackData = this.trackingRenderer.scaledCopy(scalerFunction);
+        formatToSend.trackData = this.trackingRenderer.scaledCopy(scalerObject);
     }
     else
     {
@@ -1075,11 +827,7 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
     //this keeps track of how many track areas we have received.
     var trackDataReady = 0;
     var previewRender = false;
-    var activeTool = false;
-    //mode will tell me how the control reacts to some function calls
-    var mode;
-    var tool;
-
+    
     // 2. This code loads the youtube IFrame Player API code asynchronously.
     // its called here to guarantee that it loads after the caller HTML file calls
     //the main controlles contructor that contais the video ID
@@ -1101,182 +849,160 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
         sessionToken = urlParameters["session"];
     }
     else {
-        sessionToken = '74EE24D6-EB74-42F2-90AE-F69BB6478D50';
+        sessionToken = '9BF8DCF9-FD5B-4ECD-A236-392ABF26890E';
         //alert('Failed to load the session, using default');
     }
 
     //make a reference to the front end render controller
-    userControl = new moviUserControls(userControlContainerId);
-    canvasControl = new moviCanvasController(myScaler, sessionToken);
+    canvasControl = moviCanvasController(myScaler, sessionToken);
 
 
     //used as a proxy in every mode creation
     var helperConstructor = null;
     var currentObject = null;
+    var updateObject = null;
     //----------------------------------------------------------------------------------------
     //controller v2: a generic engine, it only receives objects and coordinates them
     //does not care what type
     function addMoviObject(_moviObject) {
-        //by desingn, if there is an active tool and the user selects another one
+        //by design, if there is an active tool and the user selects another one
         //the actual tools is canceled and activate the selected one.
-        if (activeTool) {
+        if (currentObject != null) {
             cancelCurrent();
         }
+        if (updateObject != null) {
+            cancelUpdate();
+        }
         currentObject = _moviObject;
-        trackingAreaAndInfo.push(_moviObject);
-        activeTool = true;
     }
+    //----------------------------------------------------------------------------------------
+    //TODO: design the update architecture
+    function updateMoviObject(_moviObject) {
+        if (currentObject != null) {
+            cancelCurrent();
+        }
+        if (updateObject != null) {
+            cancelUpdate();
+        }
+        updateObject = _moviObject;
+    }
+    //idea:use update object to point to current object.
     //----------------------------------------------------------------------------------------
     function cancelCurrent() {
         if (currentObject != null) {
             currentObject.clear();
-            trackingAreaAndInfo.pop();
             currentObject = null;
         }
-        activeTool = false;
         previewRender = false;
         canvasControl.cancelSelectTool();
     }
-    //----------------------------------------------------------------------------------------
-
-
-    //mode initiators
-    function selectToolMode(_tool, _mode) {
-        //by desingn, if there is an active tool and the user selects another one
-        //the actual tools is canceled and activate the selected one.
-        if (activeTool) {
-            cancelTool();
-        }
-        mode = _mode;
-        tool = _tool;
-
-        switch (tool) {
-            case "highlight":
-                //the code is clearer when we declare the variables here in the initialization.
-                helperConstructor = new MoviHighlight();
-                trackingAreaAndInfo.push(helperConstructor);
-                break;
-        }
-      
-        activeTool = true;
+    function cancelUpdate() {
+        //jus dereference the object, dont clear it because its valid an in the render array
+        updateObject = null;
+        canvasControl.cancelSelectTool();
     }
-
-    //the main controller must coordinate all aspects of data strcucture creation
-    function enableTrackSelectTool() {
-        switch (tool) {
-            case "highlight":
-                //TODO: some error and type checking on the paremeter info
-                //TODO: toggle is prone to bugs
-                //be explicit and call enable editor.
-                canvasControl.toggle();
-                break;
-        }
+    //end of controller v2
+    //----------------------------------------------------------------------------------------
+    //the main controller must coordinate addin track data to the movi objects
+    function enableTrackTool() {
+        //INFO: the track data is independent from the text and other info. 
+        //so no need to check for modes or tools.
+        //TODO: toggle is prone to bugs
+        //be explicit and call enable editor.
+        canvasControl.toggle();
     }
 
     //add the track info to the data structure
     function addTrack(_parentSvgDOM, _receivedTrack) {
-        switch (tool) {
-            case "highlight":
-                //TODO: some error and type checking on the paremeter info
-                //scale the received info
-                //this function modifes the info we send
-                myScaler.scaleReceived(_receivedTrack.Xtl, _receivedTrack.Ytl, _receivedTrack.Xbr, _receivedTrack.Ybr)
-                helperConstructor.setTrack(_receivedTrack, _parentSvgDOM);
-                //count the track area to enable preview render to the user
-                previewRender = true;
-                canvasControl.toggle();
-                break;
+        //TODO: some error and type checking on the paremeter info
+        //scale the received info, this function modifes the info we send
+        myScaler.scaleReceived(_receivedTrack.Xtl, _receivedTrack.Ytl, _receivedTrack.Xbr, _receivedTrack.Ybr);
+        if (currentObject != null)
+        {
+            currentObject.setTrack(_receivedTrack, _parentSvgDOM)
+            previewRender = true;
+            canvasControl.toggle();
+            return;
         }
-    }
-
-    //cancel the current tool
-    function cancelTool() {
-        //remove the last element so we dont keep garbage.
-        if (helperConstructor != null) {
-            helperConstructor.clear();
-            trackingAreaAndInfo.pop();
-            helperConstructor = null;
+        if(updateObject != null)
+        {
+            updateObject.setTrack(_receivedTrack, _parentSvgDOM)
+            canvasControl.toggle();
+            return;
         }
-        activeTool = false;
-        previewRender = false;
-        //cap the negative counting to zero
-        //this will be usefull to enable user to delete a created entry
-        //if ((trackDataReady = trackDataReady - 1) <= 0) {
-        //    trackDataReady = 0;
-        //}
-        //cancel the selection if there is an active one
-        canvasControl.cancelSelectTool();
-        tool = "";
-        mode = "";
+        //TODO: if we reach here log an invalid operation
     }
 
     //handling the service errors
     function errorHandler() {
-        switch (tool) {
-            case "highlight":
-                //for now just toogle the controls.
-                //this allows the user to resend the request.
-                canvasControl.toggle();
-                break;
-        }
+        //canvasControl.toggle by itself takes care of state handling
+        canvasControl.toggle();
     }
 
     function cancelHandler() {
-        switch (tool) {
-            case "highlight":
-                //for now just toogle the controls.
-                //this allow the user to star from 0 the select area workflow
-                canvasControl.toggle();
-                break;
-        }
+        //canvasControl.toggle by itself
+        //this allow the user to star from 0 the select area workflow
+        canvasControl.toggle();
     }
 
     //sets the end time of the stored track data, this end time 
     //is then used to truncate the data when publishing
     function setEndTime(time) {
-        return helperConstructor.setRenderTime(time);
+        if (currentObject != null)
+        {
+            return currentObject.setRenderTime(time);
+        }
+        if (updateObject != null)
+        {
+            return updateObject.setRenderTime(time);
+        }
     }
     
+    //verifies that there is not a valid track area
+    //if so does not allow the user to change the time
+    function setStartTime(time) {
+        if (currentObject != null)
+        {
+            return currentObject.setStartTime(time);
+        }
+        if (updateObject != null)
+        {
+            return updateObject.setStartTime(time);
+        }
+    }
     
-    function addUserControlToDOM(parameter) {
+    function addUserControlToDOM() {
         //----------------v2 definition------------------
         //TODO: remember to set the various flags, like prerender, activetool etc.
+        var domReference = currentObject.writeInfoToDOM(userControlContainerId);
+        trackingAreaAndInfo.push(currentObject);
         //----------------end of v2 definitinon----------
-
-        //dafult values, in case the caller mess up the definitions, 
-        //this is done to spot issues at the code level
-        //the validation is done at the form level
-        var title = parameter.title || "not provided";
-        var content = parameter.content || "not provided";
-        var startTime = parameter.startTime || 0;
-        var endTime = parameter.endTime || 1;
-        
-        //call the defined DOM renderer in the current helperConstructor
-        var response = helperConstructor.writeInfoToDOM(title, content, startTime, endTime);
-
-        //then add editor specific elements to the created DOM element, like in an assembly line
-        //add a button and attach a click handler
-        $(response.divContainer).append('<button class="moviEditElement" type="button" >Edit Element</button>');
-        $(response.divContainer).find('.moviEditElement').click(function (event) { editElementClick(itemID); });
-
-        switch (tool) {
-            case "highlight":
-                //NOTE: highlight expects title, content, startTime and endTime
-                //TODO: some error and type checking on the paremeter info
-                helperConstructor.setData(parameter.title, parameter.content, parameter.startTime, parameter.endTime);
-                //then render the element on the HTML DOM.
-                userControl.addHightlight(parameter.title, parameter.content, parameter.startTime, parameter.endTime);
-                break;
-        }
         //ready to accept new command
-        activeTool = false;
-        tool = "";
+        currentObject = null;
         trackDataReady = trackDataReady + 1;
         previewRender = false;
+
+        //this is aquick and dirty proof of concept for the delete functionality
+        //but the place is here because the delete function only affects the main renderer
+        $(domReference.divContainer).append('<button class="moviDeleteElement" type="button" >Delete</button>');
+        var currentIndex = trackingAreaAndInfo.length-1;
+        $(domReference.divContainer).find('.moviDeleteElement').click(currentIndex, function () {
+            trackingAreaAndInfo[currentIndex].deleteDom();
+            trackingAreaAndInfo.splice(currentIndex, 1);
+        });
+    }
+
+    function updateUserControlDOM() {
+        updateObject.updateDomObject();
+        updateObject = null;
     }
 
     function render(time, offset) {
-        if (trackDataReady > 0 || previewRender) {
+        if (previewRender)
+        {
+            currentObject.render(time, offset);
+        }
+        if (trackDataReady > 0 ) {
             for (var i = 0; i < trackingAreaAndInfo.length; i++) {
                 //tracking engine v2
                 trackingAreaAndInfo[i].render(time, offset);
@@ -1284,50 +1010,33 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
         }
     }
 
-    function isActiveTool() {
-        return activeTool;
+    function getTrackArea()
+    {
+        return trackingAreaAndInfo;
     }
 
     function storeData() {
-        var helperHighligth = [];
-        var highlightTemp;
-        var highlightConstructor;
-        var scaledtrackDataTemp;
-        var innerIndex;
+        //--------------------v2--------------------------------------
+        //the idea here is that every object mus at least contain title and content
+        //so we desing and inheritance structure to send all the objects in one array
+        //instead of designing one service contract for every  format
+        var sendBuffer = [];
         for (var i = 0; i < trackingAreaAndInfo.length; i++) {
-            highlightConstructor = { trackData: {} };
-            highlightTemp = trackingAreaAndInfo[i].getFormattedData();
-            if (highlightTemp.trackData != null) {
-                //apply the scale transformation before sending the info
-                //doing the slice rountrip to prevent modifying the display info
-                innerIndex = binaryIndexOf.call(highlightTemp.trackData.timeLine, trackingAreaAndInfo[i].getRenderEndTime());
-                scaledtrackDataTemp = myScaler.scaleToStore(highlightTemp.trackData.Xtl.slice(0, innerIndex), highlightTemp.trackData.Ytl.slice(0, innerIndex),
-                                                         highlightTemp.trackData.Xbr.slice(0, innerIndex), highlightTemp.trackData.Ybr.slice(0, innerIndex));
-                highlightConstructor.trackData.Xtl = scaledtrackDataTemp.Xtl;
-                highlightConstructor.trackData.Ytl = scaledtrackDataTemp.Ytl;
-                highlightConstructor.trackData.Xbr = scaledtrackDataTemp.Xbr;
-                highlightConstructor.trackData.Ybr = scaledtrackDataTemp.Ybr;
-                highlightConstructor.trackData.timeLine = highlightTemp.trackData.timeLine.slice(0, innerIndex);
-            }
-            else
-            {
-                highlightConstructor.trackData = null;
-            }
-            highlightConstructor.title = highlightTemp.title;
-            highlightConstructor.content = highlightTemp.content;
-            highlightConstructor.startTime = highlightTemp.startTime;
-            highlightConstructor.endTime = highlightTemp.endTime;
-            helperHighligth.push(highlightConstructor)
+            sendBuffer[i] = trackingAreaAndInfo[i].storeFormat(myScaler);
         }
-
+        //--------------------end of v2-------------------------------
         //once the data is formated send it to the service to store
+        var infoToSend =
+        {
+            dataStream: sendBuffer
+        };
         $.ajax({
-            url: "http://moviserver.cloudapp.net/service1.svc/web/storeHighlight",
+            url: "http://moviserver.cloudapp.net/service3.svc/web/moviStoreData",
             type: "POST",
             cache: false,
             //CARE: the parameter name MUST match the parameter definition on wcf
             data: JSON.stringify({
-                highlight: helperHighligth,
+                parameters: infoToSend,
                 sessionToken: sessionToken,
             }),
             contentType: "application/json; charset=utf-8",
@@ -1349,13 +1058,18 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
     return {
         //-------v2----------------
         addMoviObject: addMoviObject,
+        setStartTime: setStartTime,
+        updateMoviObject: updateMoviObject,
+        updateUserControlDOM : updateUserControlDOM,
         //-------end of v2---------
-        selectToolMode: selectToolMode,
-        enableTrackTool: enableTrackSelectTool,
+
+        //---------debug methods---
+        getTrackArea: getTrackArea,
+        //--------end of debug-----
+        enableTrackTool: enableTrackTool,
         addTrack: addTrack,
         addUserControlToDOM: addUserControlToDOM,
         render: render,
-        isActiveTool: isActiveTool,
         storeData: storeData,
         errorHandler: errorHandler,
         cancelHandler: cancelHandler,

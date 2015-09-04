@@ -17,3 +17,39 @@
     height: 150px;  
     box-shadow:0px 0px 0px 1px yellow inset;
 }
+
+@media (min-width: 480px){
+    #container {
+        width: 720px;
+        height: 325px;
+        border: 1px solid ;
+        background-color: black;
+    }
+}
+
+@media (min-width: 768px){
+    #container {
+        width: 720px;
+        height: 325px;
+        border: 1px solid ;
+        background-color: black;
+    }
+}
+
+@media (min-width: 992px){
+    #container {
+        width: 940px;
+        height: 425px;
+        border: 1px solid ;
+        background-color: black;
+    }
+}
+
+@media (min-width: 1200px){
+    #container {
+        width: 1140px;
+        height: 515px;
+        border: 1px solid ;
+        background-color: black;
+    }
+}

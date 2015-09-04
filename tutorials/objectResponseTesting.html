@@ -115,14 +115,14 @@
         function callServiceReceiveMovi()
         {
             $.ajax({
-                url: "http://moviserver.cloudapp.net/service1.svc/web/moviOutput",
+                url: "http://moviserver.cloudapp.net/service3.svc/web/moviGetData",
                 type: "POST",
                 cache: false,
                 //CARE: the parameter name MUST match the parameter definition on wcf
                 //when the service receives no parametes we can ommit the data declaration
                 //or declare it empty, either works
                 data: JSON.stringify({
-                    
+                    projectToken: 'o'
                 }),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
