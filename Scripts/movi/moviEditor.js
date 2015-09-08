@@ -63,6 +63,12 @@ var moviToolsControler = function () {
             case "highlightEditor":
                 mainController.addMoviObject(new MoviHighlight(moviForm));
                 break;
+            case "clickableAreaEditor":
+                mainController.addMoviObject(new MoviClickableArea(moviForm));
+                break;
+            case "bookmarkEditor":
+                mainController.addMoviObject(new MoviBookmark(moviForm));
+                break;
             default:
                 //this default behaviour is intended to be used as a debugger helper
                 //we send the base object
@@ -264,7 +270,8 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady(event) {
     event.target.playVideo();
     //set up DOM initialization when the player is ready
-    $('#endTime').val(getPlayerDuration());
+    //TODO: this must be done on the front end controller, send a event or something
+    $('.moviEndTime').val(getPlayerDuration());
 }
 // 5. The API calls this function when the player's state changes.
 //    The function indicates that when playing a video (state=1),
@@ -438,7 +445,8 @@ function areaSelector(eventAS, parentSVG, offsetX, offsetY, _scaler, _sessionTok
     });
     //get video time and pause the video
     initialTime = player.getCurrentTime()
-    $('#startTime').val(initialTime);
+    //TODO: this set up must be done on the front end controller, send a event or something
+    $('.moviStartTime').val(initialTime);
     pauseVideo();
     //detaching the original event caller 
     parentSVG.off("click");
@@ -665,9 +673,24 @@ var MoviHighlight = function (_moviForm) {
     this.trackingRenderer = null;
 
 };
-
 //-------------------------------------------------------------------------------------------------------
-MoviHighlight.prototype.writeInfoToDOM = function (_rootElementId){
+MoviHighlight.prototype.setHighlightValueFromService = function (_moviObject, _parentSvgDOM) {
+    this.title = _moviObject.title || "Service Undefined";
+    this.content = _moviObject.content || "Service Undefined";
+    this.startTime = _moviObject.startTime || 0;
+    this.endTime = _moviObject.endTime || 1;
+    if (_moviObject.trackData != null && _moviObject.trackData != undefined)
+    {
+        this.trackingRenderer = new MoviTracking(_moviObject.trackData, _parentSvgDOM);
+    }
+}
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.writeInfoFromService = function (_moviObject, _parentSvgDOM, _rootElementId) {
+    this.setHighlightValueFromService(_moviObject, _parentSvgDOM);
+    return this.moviDomImplementation(_rootElementId);
+}
+    //-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.setHighlightValuesFromUser = function () {
     //save the info into the service format structure
     //TODO: this default assigment is not working because if moviform is undefined we get
     //an accessing undefined methods exception
@@ -677,6 +700,9 @@ MoviHighlight.prototype.writeInfoToDOM = function (_rootElementId){
     //TODO: if there is a track area make sure this times are coordinated
     this.startTime = $(this.moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
     this.endTime = $(this.moviForm).find('.toolForm').find('.moviEndTime').val() || 1;
+}
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.moviDomImplementation = function(_rootElementId){
     //generate an ID so we can refer back to the item
     var itemID = randomIdGenerator();
     this.domID = itemID;
@@ -711,25 +737,39 @@ MoviHighlight.prototype.writeInfoToDOM = function (_rootElementId){
         itemID: itemID,
         divContainer: $('#' + itemID).next().get(0),
     }
+}
+//-------------------------------------------------------------------------------------------------------
+
+MoviHighlight.prototype.writeInfoToDOM = function (_rootElementId) {
+    //the the object properties from the form user input
+    this.setHighlightValuesFromUser();
+    return this.moviDomImplementation(_rootElementId);
 };
 //-------------------------------------------------------------------------------------------------------
-MoviHighlight.prototype.populateUpdater= function(){
-    moviToolsControler.showToolContainerUpdate(this.moviForm, this);
+MoviHighlight.prototype.populateHighlightUpdater = function () {
     //fill the data in the form
     $(this.moviForm).find('.toolForm').find('.moviTitle').val(this.title);
     $(this.moviForm).find('.toolForm').find('.moviContent').val(this.content);
     $(this.moviForm).find('.toolForm').find('.moviStartTime').val(this.startTime);
     $(this.moviForm).find('.toolForm').find('.moviEndTime').val(this.endTime);
+}
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.populateUpdater= function(){
+    moviToolsControler.showToolContainerUpdate(this.moviForm, this);
+    this.populateHighlightUpdater();
 };
 //-------------------------------------------------------------------------------------------------------
-MoviHighlight.prototype.updateDomObject= function(){
+MoviHighlight.prototype.updateHighlightObject = function () {
     //modify the DOM representation of the object
     this.title = $(this.moviForm).find('.toolForm').find('.moviTitle').val() || "Update Failed";
     this.content = $(this.moviForm).find('.toolForm').find('.moviContent').val() || "Update Failed"
     //TODO: if there is a track area make sure this times are coordinated
     this.startTime = $(this.moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
     this.endTime = $(this.moviForm).find('.toolForm').find('.moviEndTime').val() || 1;
-
+};
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.updateDomObject= function(){
+    this.updateHighlightObject();
     //and update the DOM representation
     $('#' + this.domID).text(this.title);
     $('#' + this.domID).next().find('p').first().text(this.content);
@@ -762,29 +802,41 @@ MoviHighlight.prototype.setStartTime = function (_time) {
     return _time;
 }
 //-------------------------------------------------------------------------------------------------------
-//clear the track data and removes the rectangle from the DOM
-MoviHighlight.prototype.clear = function () {
-    if (this.trackingRenderer != null) {
-        this.trackingRenderer.clearDOM();
-        this.trackingRenderer = null;
-        this.startTime = 0;
-        this.endTime = 0;
-    }
+MoviHighlight.prototype.clearHighlight = function () {
     //set this values for debugging purposes
     this.title = "Cleared";
     this.content = "Cleared";
-};
-//-------------------------------------------------------------------------------------------------------
-MoviHighlight.prototype.deleteDom = function () {
+    this.startTime = 0;
+    //TODO: global namespace use, correct this by using encapsulation
+    this.endTime = getPlayerDuration();
+
     if (this.trackingRenderer != null) {
         this.trackingRenderer.clearDOM();
         this.trackingRenderer = null;
-        this.startTime = 0;
-        this.endTime = 0;
     }
+    
+};
+//-------------------------------------------------------------------------------------------------------
+//clear the track data and removes the rectangle from the DOM
+MoviHighlight.prototype.clear = function () {
+    this.clearHighlight();
+};
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.deleteHighlightDom = function(){
     //set this values for debugging purposes
     this.title = "Deleted";
     this.content = "Deleted";
+    this.startTime = 0;
+    this.endTime = 1;
+    if (this.trackingRenderer != null) {
+        this.trackingRenderer.clearDOM();
+        this.trackingRenderer = null;
+    }
+    
+};
+//-------------------------------------------------------------------------------------------------------
+MoviHighlight.prototype.deleteDom = function () {
+    this.deleteHighlightDom();
     //delete the elements from the dom
     $('#' + this.domID).next().remove();
     $('#' + this.domID).remove();
@@ -821,7 +873,313 @@ MoviHighlight.prototype.storeFormat = function (scalerObject) {
 //***************************OBJECT: MOVI HIHGLIGHT*****************************************************
 //******************************************************************************************************
 
-function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourceHeight) {
+
+//******************************************************************************************************
+//***************************OBJECT: MOVI CLICKABLEAREA*************************************************
+//ATENTION: we are testing here the inheritance features of javascript.
+var MoviClickableArea = function (_moviForm){
+    //inherit the highlight properties
+    MoviHighlight.call(this, _moviForm);
+
+    //ClickableArea Specifics
+    this.link = "not set";
+    this.visibleAtStart = false;
+}
+
+//TODO: this is not backward compatible
+//see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
+//for browser compatibility and workarrounds on older engines
+MoviClickableArea.prototype = Object.create(MoviHighlight.prototype);
+//set this to avoid strage cases down the road
+MoviClickableArea.prototype.constructor = MoviClickableArea;
+
+//specific class methods
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.setCaValuesFromUser = function () {
+    this.setHighlightValuesFromUser();
+    //setting the clickable area properties
+    this.link = $(this.moviForm).find('.toolForm').find('.moviLink').val() || "tool undefined";
+    this.visibleAtStart = $(this.moviForm).find('.toolForm').find('.moviVisibleAtStart').is(":checked") || "tool undefined";
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.setCaValuesFromService = function (_moviObject, _parentSvgDOM) {
+    this.setHighlightValueFromService(_moviObject, _parentSvgDOM);
+    //setting the clickable area properties
+    this.link = _moviObject.linkUrl || "Service Undefined";
+    this.visibleAtStart = _moviObject.visibleAtStart || false;
+};
+//-------------------------------------------------------------------------------------------------------
+
+//Start overrinding methods:
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.writeInfoFromService = function (_moviObject, _parentSvgDOM, _rootElementId) {
+    this.setCaValuesFromService(_moviObject, _parentSvgDOM);
+    return this.moviDomImplementation(_rootElementId);
+}
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.moviDomImplementation = function (_rootElementId) {
+    //generate an ID so we can refer back to the item
+    var itemID = randomIdGenerator();
+    this.domID = itemID;
+    //then render the info in the HTML DOM.
+    $('#' + _rootElementId).prepend('<h2 id=' + itemID + '>' + this.title + '</h2>' +
+        '<div>' +
+        '<p>' + this.content + '<br> >Ver en video < </p>' +
+        '<a href="' + this.link + '" target="_blank">Ver más</a>' +
+        '<button class="moviUpdateElement" type="button" >Edit Element</button>' +
+        '</div>');
+    //enable the accordion functionality
+    $('#' + _rootElementId).find('h2').first().click(function () {
+        $(this).next().slideToggle()
+    }).next().hide();
+    //bind the update functionality to the Edit Element button
+    $('#' + itemID).next().find('.moviUpdateElement').click(this, function (event) {
+        //calling the MoviHighlight.populateUpdater
+        event.data.populateUpdater();
+        //TODO: we need some coordination on the control area to give 
+        //the user feedback from the Uptating process
+    });
+    //bind the seek video functionality to the click event on the P
+    $('#' + itemID).next().find('p').first().click(this, function (event) {
+        //TODO: check if this works because seekVideo id defined on the global namespace
+        //we bind the start time of the current object
+        seekVideo(event.data.startTime);
+    });
+    //pause the video when the link is clicked
+    $('#' + itemID).next().find('a').first().click(this, function (event) {
+        //TODO: check if this works because seekVideo id defined on the global namespace
+        //we bind the start time of the current object
+        pauseVideo();
+    });
+    //return the ID and an element instance of the DIV to add more elements as needed
+    //think of it like an assembly line, this object only cares to render title and content.
+    return params = {
+        itemID: itemID,
+        divContainer: $('#' + itemID).next().get(0),
+    }
+}
+//-------------------------------------------------------------------------------------------------------
+//_rootElementId: the DOM ID of the movi areas container
+MoviClickableArea.prototype.writeInfoToDOM = function (_rootElementId) {
+    //the the object properties from the form user input
+    this.setCaValuesFromUser();
+    return this.moviDomImplementation(_rootElementId);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.populateCaUpdater = function () {
+    this.populateHighlightUpdater();
+    //fill the clickable area specific properties
+    $(this.moviForm).find('.toolForm').find('.moviLink').val(this.link);
+    $(this.moviForm).find('.toolForm').find('.moviVisibleAtStart').prop('checked', this.visibleAtStart);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.populateUpdater = function () {
+    moviToolsControler.showToolContainerUpdate(this.moviForm, this);
+    this.populateCaUpdater();
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.updateCaObject = function () {
+    this.updateHighlightObject();
+    //update the clickable area specifics
+    this.link = $(this.moviForm).find('.toolForm').find('.moviLink').val() || "Update Failed";
+    this.visibleAtStart = $(this.moviForm).find('.toolForm').find('.moviVisibleAtStart').is(":checked") || false;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.updateDomObject = function () {
+    this.updateCaObject();
+    //then update the dom representation
+    $('#' + this.domID).text(this.title);
+    $('#' + this.domID).next().find('p').first().html(this.content + '\<br\> >Ver en video <');
+    $('#' + this.domID).next().find('a').first().attr("href", this.link);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.clearClickableArea = function () {
+    this.clearHighlight();
+    //clear the clickable area specific values
+    this.link = "cleared";
+    this.visibleAtStart = false;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.clear = function () {
+    this.clearClickableArea();
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.deleteCaDom = function () {
+    this.deleteHighlightDom();
+    //delete the specific values, debugging purposes
+    this.link = "deleted";
+    this.visibleAtStart = false;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.deleteDom = function () {
+    this.deleteCaDom();
+    //delete the elements from the DOM.
+    $('#' + this.domID).next().remove();
+    $('#' + this.domID).remove();
+};
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.storeFormat = function(scalerObject){
+    var formatToSend = new Object();
+    formatToSend.__type = "moviClickableArea:#moviDataLibrary";
+    if (this.trackingRenderer != null)
+    {
+        formatToSend.trackData = this.trackingRenderer.scaledCopy(scalerObject);
+    }
+    else
+    {
+        formatToSend.trackData = null;
+    }
+    formatToSend.title = this.title;
+    formatToSend.content = this.content;
+    formatToSend.linkUrl = this.link;
+    formatToSend.visibleAtStart = this.visibleAtStart;
+    formatToSend.startTime = this.startTime;
+    formatToSend.endTime = this.endTime;
+    return formatToSend;
+};
+//-------------------------------------------------------------------------------------------------------
+//***********************END OF OBJECT: MOVI CLICKABLE AREA*********************************************
+//******************************************************************************************************
+
+//******************************************************************************************************
+//***************************OBJECT: MOVI BOOKMARK *****************************************************
+var MoviBookmark = function (_moviForm) {
+    //this does not inherit anythig as this does not declarea a tracking area.
+    this.moviForm = _moviForm;
+    this.title = "not set";
+    this.content = "not set";
+    this.startTime = 0;
+}
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.setBookmarkValueFromService = function (_moviObject, _parentSvgDOM) {
+    this.title = _moviObject.title || "Service Undefined";
+    this.content = _moviObject.content || "Service Undefined";
+    this.startTime = _moviObject.startTime || 0;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.writeInfoFromService = function (_moviObject, _parentSvgDOM, _rootElementId) {
+    this.setBookmarkValueFromService(_moviObject, _parentSvgDOM);
+    return this.moviDomImplementation(_rootElementId);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.setBookmarkValuesFromUser = function () {
+    this.title = $(this.moviForm).find('.toolForm').find('.moviTitle').val() || "tool undefined";
+    this.content = $(this.moviForm).find('.toolForm').find('.moviContent').val() || "tool undefined";
+    this.startTime = $(this.moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.moviDomImplementation = function (_rootElementId) {
+    //generate an ID so we can refer back to the item
+    var itemID = randomIdGenerator();
+    this.domID = itemID;
+    //then render the info in the HTML DOM.
+    $('#' + _rootElementId).prepend('<h2 id=' + itemID + '>' + this.title + '</h2>' +
+        '<div>' +
+        '<p>' + this.content + '</p>' +
+        '<button class="moviUpdateElement" type="button" >Edit Element</button>' +
+        '</div>');
+    //enable the accordion functionality
+    $('#' + _rootElementId).find('h2').first().click(function () {
+        $(this).next().slideToggle()
+    }).next().hide();
+    //bind the update functionality to the Edit Element button
+    $('#' + itemID).next().find('.moviUpdateElement').click(this, function (event) {
+        //calling the MoviHighlight.populateUpdater
+        event.data.populateUpdater();
+        //TODO: we need some coordination on the control area to give 
+        //the user feedback from the Uptating process
+    });
+    //bind the seek video functionality to the click event on the P
+    $('#' + itemID).next().find('p').first().click(this, function (event) {
+        //TODO: check if this works because seekVideo id defined on the global namespace
+        //we bind the start time of the current object
+        seekVideo(event.data.startTime);
+    });
+    //return the ID and an element instance of the DIV to add more elements as needed
+    //think of it like an assembly line, this object only cares to render title and content.
+    return params = {
+        itemID: itemID,
+        divContainer: $('#' + itemID).next().get(0),
+    }
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.writeInfoToDOM = function (_rootElementId) {
+    this.setBookmarkValuesFromUser();
+    return this.moviDomImplementation(_rootElementId);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.populateBookmarkUpdater = function () {
+    $(this.moviForm).find('.toolForm').find('.moviTitle').val(this.title);
+    $(this.moviForm).find('.toolForm').find('.moviContent').val(this.content);
+    $(this.moviForm).find('.toolForm').find('.moviStartTime').val(this.startTime);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.populateUpdater = function () {
+    moviToolsControler.showToolContainerUpdate(this.moviForm, this);
+    this.populateBookmarkUpdater();
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.updateBookmarkObject = function () {
+    this.title = $(this.moviForm).find('.toolForm').find('.moviTitle').val() || "Update Failed";
+    this.content = $(this.moviForm).find('.toolForm').find('.moviContent').val() || "Update Failed";
+    this.startTime = $(this.moviForm).find('.toolForm').find('.moviStartTime').val() || 0;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.updateDomObject = function () {
+    this.updateBookmarkObject();
+    $('#' + this.domID).text(this.title);
+    $('#' + this.domID).next().find('p').first().text(this.content);
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.clearBookmark = function () {
+    this.title = "cleared";
+    this.content = "cleared";
+    this.startTime = 0;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.clear = function () {
+    this.clearBookmark();
+}
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.deleteBookmarkDom = function () {
+    //these are debug values
+    this.title = "deleted";
+    this.content = "deleted";
+    this.startTime = 0;
+};
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.deleteDom = function () {
+    this.deleteBookmarkDom();
+    //delete the elements from the DOM.
+    $('#' + this.domID).next().remove();
+    $('#' + this.domID).remove();
+}
+//-------------------------------------------------------------------------------------------------------
+//define render to do nothing as the engine will call it
+//leave setRenderTime and setTrack undeclared as they shoud not be called
+MoviBookmark.prototype.render = function (_time, _offset) {
+    return;
+}
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.setStartTime = function (_time) {
+    this.startTime = _time;
+    return _time;
+}
+//-------------------------------------------------------------------------------------------------------
+//keep the scaler object as it belongs in the signature and will be sent
+MoviBookmark.prototype.storeFormat = function (scalerObject) {
+    var formatToSend = new Object();
+    formatToSend.__type = "moviBookmark:#moviDataLibrary";
+    formatToSend.title = this.title;
+    formatToSend.content = this.content;
+    formatToSend.startTime = this.startTime;
+    return formatToSend;
+};
+
+//***********************END OF OBJECT: MOVI BOOKMARK **************************************************
+//******************************************************************************************************
+
+function moviEditorController(userControlContainerId, ytVideo, sourceWidth, sourceHeight){
     var trackingAreaAndInfo = [];
     var domToInfoDictionary = new Object();
     //this keeps track of how many track areas we have received.
@@ -844,15 +1202,22 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
     //read the session token from the URL
     //if not present default to some testing token ID
     var urlParameters = queryString(window.location.search.substr(1).split('&'));
-    var sessionToken
+    var sessionToken;
+    var projectQueryToken = null;
     if (urlParameters["session"] != null) {
         sessionToken = urlParameters["session"];
     }
     else {
-        sessionToken = '9BF8DCF9-FD5B-4ECD-A236-392ABF26890E';
+        sessionToken = 'B2BF0691-83AA-4CBD-8FD5-DFF5F1CE88E9';
         //alert('Failed to load the session, using default');
     }
-
+    //checking if the token parameter, use this to load existing data
+    //and editing it.
+    if (urlParameters["token"] != null) {
+        projectQueryToken = urlParameters["token"];
+        getProjectInfo();
+    }
+    
     //make a reference to the front end render controller
     canvasControl = moviCanvasController(myScaler, sessionToken);
 
@@ -903,7 +1268,7 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
     }
     //end of controller v2
     //----------------------------------------------------------------------------------------
-    //the main controller must coordinate addin track data to the movi objects
+    //the main controller must coordinate adding track data to the movi objects
     function enableTrackTool() {
         //INFO: the track data is independent from the text and other info. 
         //so no need to check for modes or tools.
@@ -987,8 +1352,8 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
         $(domReference.divContainer).append('<button class="moviDeleteElement" type="button" >Delete</button>');
         var currentIndex = trackingAreaAndInfo.length-1;
         $(domReference.divContainer).find('.moviDeleteElement').click(currentIndex, function () {
-            trackingAreaAndInfo[currentIndex].deleteDom();
-            trackingAreaAndInfo.splice(currentIndex, 1);
+            trackingAreaAndInfo[event.data].deleteDom();
+            trackingAreaAndInfo.splice(event.data, 1);
         });
     }
 
@@ -1038,6 +1403,7 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
             data: JSON.stringify({
                 parameters: infoToSend,
                 sessionToken: sessionToken,
+                projectToken: projectQueryToken,
             }),
             contentType: "application/json; charset=utf-8",
             dataType: "json",
@@ -1052,6 +1418,82 @@ function moviEditorController(userControlContainerId,ytVideo, sourceWidth, sourc
             },
             error: function (response) {
                 alert('Failed: ' + response.statusText);
+            }
+        });
+    }
+    //-------------------project loader-----------------------------------------------------
+    function getProjectInfo ()
+    {
+        $.ajax({
+            url: "http://moviserver.cloudapp.net/service3.svc/web/moviGetData",
+            type: "POST",
+            cache: false,
+            //CARE: the parameter name MUST match the parameter definition on wcf
+            data: JSON.stringify({
+                //this is an existin project, this id must come from the session.
+                projectToken: projectQueryToken,
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            processData: true,
+            //note: complete responds with data.responseJSON
+            // success responds with data directly
+            success: function (data) {
+                //TODO: the service respond with the trackarea tokens, 
+                //we can use them to allow data edit.
+                //---------------------------V2 data structure------------------------
+                var currentObject;
+                var transformObject;
+                var currentDomReference;
+                var currentIndex = 0;
+                for (var i = 0; i < data.d.dataStream.length; i++) {
+                    currentObject = data.d.dataStream[i];
+                    //first scale the track data if any
+                    if (currentObject.trackData != null && currentObject.trackData != undefined) {
+                        myScaler.scaleReceived(currentObject.trackData.Xtl, currentObject.trackData.Ytl,
+                                            currentObject.trackData.Xbr, currentObject.trackData.Ybr)
+                    }
+                    //the create he corresponding object:
+                    //the __type is a WCF convention, if we move to another system we might need to change that
+                    //here referin to the DOM IDs is a bit unortodox, investigate if there is another way
+                    switch (currentObject.__type) {
+                        case "moviHighlight:#moviDataLibrary":
+                            transformObject = new MoviHighlight($('#highlightEditor').next().get(0));
+                            currentDomReference = transformObject.writeInfoFromService(currentObject, $('#svgRoot').get(0),
+                                userControlContainerId);
+                            trackingAreaAndInfo.push(transformObject);
+                            break;
+                        case "moviClickableArea:#moviDataLibrary":
+                            transformObject = new MoviClickableArea($('#clickableAreaEditor').next().get(0));
+                            currentDomReference = transformObject.writeInfoFromService(currentObject, $('#svgRoot').get(0),
+                                userControlContainerId);
+                            trackingAreaAndInfo.push(transformObject);
+                            break;
+                        case "moviBookmark:#moviDataLibrary":
+                            transformObject = new MoviBookmark($('#bookmarkEditor').next().get(0));
+                            currentDomReference = transformObject.writeInfoFromService(currentObject, $('#svgRoot').get(0),
+                                userControlContainerId);
+                            trackingAreaAndInfo.push(transformObject);
+                            break;
+                    }
+
+                    $(currentDomReference.divContainer).append('<button class="moviDeleteElement" type="button" >Delete</button>');
+                    currentIndex = trackingAreaAndInfo.length - 1;
+                    $(currentDomReference.divContainer).find('.moviDeleteElement').click(currentIndex, function (event) {
+                        trackingAreaAndInfo[event.data].deleteDom();
+                        trackingAreaAndInfo.splice(event.data, 1);
+                    });
+                }
+                trackDataReady = trackDataReady + 1;
+                //--------------------end of-V2 data structure------------------------
+                alert('get movi Object success');
+
+            },
+            error: function (response) {
+                alert('Failed: ' + response.statusText);
+                //SAFE CHECK: if something fails do not allow the system to submit an delete - update 
+                //query
+                projectQueryToken = null;
             }
         });
     }

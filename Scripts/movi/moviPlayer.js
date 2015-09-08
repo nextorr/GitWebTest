@@ -158,7 +158,7 @@ function moviTrackedUserControl(parentSvgDOM, trackData) {
 //******************************************************************************************************
 //***************************OBJECT: MOVI HIGHLIGHT*****************************************************
 var MoviHighlight = function (_moviObject, _parentSvgDOM, _rootElementId) {
-    this.highlight = _moviObject;
+    this.moviObject = _moviObject;
     this.trackData = null;
     if (_moviObject.trackData != null)
     {
@@ -171,9 +171,9 @@ MoviHighlight.prototype.writeInfoToDOM = function (rootElementId) {
     //then render the info in the HTML DOM.
     var itemID = randomIdGenerator();
     this.domID = itemID;
-    $('#' + rootElementId).prepend('<h2 id=' + itemID + '>' + this.highlight.title + '</h2>' +
+    $('#' + rootElementId).prepend('<h2 id=' + itemID + '>' + this.moviObject.title + '</h2>' +
         '<div>' +
-        '<p>' + this.highlight.content + '</p>' +
+        '<p>' + this.moviObject.content + '</p>' +
         '</div>');
     //enable the accordion functionality
     $('#' + rootElementId).find('h2').first().click(function () {
@@ -183,7 +183,7 @@ MoviHighlight.prototype.writeInfoToDOM = function (rootElementId) {
 
     //bind the seek video functionality to the click event on the P
     $('#' + itemID).next().find('p').first().click(this, function (event) {
-        seekVideo(event.data.highlight.startTime);
+        seekVideo(event.data.moviObject.startTime);
     });
 }
 //-------------------------------------------------------------------------------------------------------
@@ -202,6 +202,95 @@ MoviHighlight.prototype.getTrackData = function () {
 //-------------------------------------------------------------------------------------------------------
 
 //***************************OBJECT: MOVI HIHGLIGHT*****************************************************
+//******************************************************************************************************
+
+//******************************************************************************************************
+//***************************OBJECT: MOVI CLICKABLEAREA*************************************************
+var MoviClickableArea = function (_moviObject, _parentSvgDOM, _rootElementId) {
+    //inherit the highlight properties
+    MoviHighlight.call(this, _moviObject, _parentSvgDOM, _rootElementId);
+    //remember that we are receiving a typed object, so no need to declare variables
+    //also the parent constructor is calling writeInfoToDOM
+    //this.writeInfoToDOM(_rootElementId);
+};
+//TODO: this is not backward compatible
+//see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
+//for browser compatibility and workarrounds on older engines
+MoviClickableArea.prototype = Object.create(MoviHighlight.prototype);
+//set this to avoid strage cases down the road
+MoviClickableArea.prototype.constructor = MoviClickableArea;
+
+//specific moviclickable area methods
+//-------------------------------------------------------------------------------------------------------
+MoviClickableArea.prototype.writeInfoToDOM = function (rootElementId) {
+    var itemID = randomIdGenerator();
+    this.domID = itemID;
+    $('#' + rootElementId).prepend('<h2 id=' + itemID + '>' + this.moviObject.title + '</h2>' +
+        '<div>' +
+        '<p>' + this.moviObject.content + '<br> >Ver en video < </p>' +
+        '<a href="' + this.moviObject.linkUrl + '" target="_blank">Ver más</a>' +
+        '</div>');
+    //enable the accordion functionality
+    $('#' + rootElementId).find('h2').first().click(function () {
+        //here, this is the current Jquery object
+        $(this).next().slideToggle()
+    }).next().hide();
+    //bind the seek video functionality to the click event on the P
+    $('#' + itemID).next().find('p').first().click(this, function (event) {
+        seekVideo(event.data.moviObject.startTime);
+    });
+    //pause the video when the link is clicked
+    $('#' + itemID).next().find('a').first().click(this, function (event) {
+        //TODO: check if this works because seekVideo id defined on the global namespace
+        //we bind the start time of the current object
+        pauseVideo();
+    });
+};
+
+//-------------------------------------------------------------------------------------------------------
+
+//***********************END OF OBJECT: MOVI CLICKABLE AREA*********************************************
+//******************************************************************************************************
+
+//******************************************************************************************************
+//***************************OBJECT: MOVI BOOKMARK *****************************************************
+var MoviBookmark = function (_moviObject, _parentSvgDOM, _rootElementId) {
+    this.moviObject = _moviObject;
+    this.writeInfoToDOM(_rootElementId);
+    
+}
+//-------------------------------------------------------------------------------------------------------
+MoviBookmark.prototype.writeInfoToDOM = function (rootElementId) {
+    //then render the info in the HTML DOM.
+    var itemID = randomIdGenerator();
+    this.domID = itemID;
+    $('#' + rootElementId).prepend('<h2 id=' + itemID + '>' + this.moviObject.title + '</h2>' +
+        '<div>' +
+        '<p>' + this.moviObject.content + '</p>' +
+        '</div>');
+    //enable the accordion functionality
+    $('#' + rootElementId).find('h2').first().click(function () {
+        //here, this is the current Jquery object
+        $(this).next().slideToggle()
+    }).next().hide();
+
+    //bind the seek video functionality to the click event on the P
+    $('#' + itemID).next().find('p').first().click(this, function (event) {
+        seekVideo(event.data.moviObject.startTime);
+    });
+};
+//-------------------------------------------------------------------------------------------------------
+//define this function to do nothing
+MoviBookmark.prototype.render = function (_time, _offset) {
+    return;
+};
+//-------------------------------------------------------------------------------------------------------
+//define this function to do nothing
+MoviBookmark.prototype.getTrackData = function () {
+    return null;
+};
+//-------------------------------------------------------------------------------------------------------
+//***********************END OF OBJECT: MOVI BOOKMARK **************************************************
 //******************************************************************************************************
 
 function moviPlayerController(userControlContainerId, sourceWidth, sourceHeight, queryToken) {
@@ -267,7 +356,7 @@ function moviPlayerController(userControlContainerId, sourceWidth, sourceHeight,
                 {
                     currentObject = data.d.dataStream[i];
                     //first scale the track data if any
-                    if (currentObject.trackData != null)
+                    if (currentObject.trackData != null && currentObject.trackData != undefined)
                     {
                         myScaler.scaleReceived(currentObject.trackData.Xtl, currentObject.trackData.Ytl,
                                             currentObject.trackData.Xbr, currentObject.trackData.Ybr)
@@ -278,6 +367,14 @@ function moviPlayerController(userControlContainerId, sourceWidth, sourceHeight,
                     {
                         case "moviHighlight:#moviDataLibrary":
                             trackingAreaAndInfo.push(new MoviHighlight(currentObject,
+                                $('#svgRoot').get(0), userControlContainerId));
+                            break;
+                        case "moviClickableArea:#moviDataLibrary":
+                            trackingAreaAndInfo.push(new MoviClickableArea(currentObject,
+                                $('#svgRoot').get(0), userControlContainerId));
+                            break;
+                        case "moviBookmark:#moviDataLibrary":
+                            trackingAreaAndInfo.push(new MoviBookmark(currentObject,
                                 $('#svgRoot').get(0), userControlContainerId));
                             break;
                     }
