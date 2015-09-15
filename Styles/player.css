@@ -16,6 +16,7 @@
     width: 150px; 
     height: 150px;  
     box-shadow:0px 0px 0px 1px yellow inset;
+    overflow:visible;
 }
 
 @media (min-width: 480px){

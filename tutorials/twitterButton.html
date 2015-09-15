@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>testing the twitter for web api</title>
+    <script type="text/javascript" src="../Scripts/jquery21/jquery-2.1.0.js"></script>
+    <script>
+        window.twttr = (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0],
+              t = window.twttr || {};
+            if (d.getElementById(id)) return t;
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://platform.twitter.com/widgets.js";
+            fjs.parentNode.insertBefore(js, fjs);
+
+            t._e = [];
+            t.ready = function (f) {
+                t._e.push(f);
+            };
+
+            return t;
+        }(document, "script", "twitter-wjs"));
+    </script>
+</head>
+<body>
+    <h1>Testing the twitter button</h1>
+    <a href="https://dev.twitter.com/web/tweet-button">read the documentation here</a>
+    <p>this is a simple twitter button created directly from HTML and using the javascript api</p>
+    <a href="https://twitter.com/share"
+       class="twitter-share-button"
+       data-via="Juanpepitorodri"
+       data-url="https://movi2.azurewebsites.net"
+       data-loading-text="probando el boton de twitter"
+       data-hashtags="moviRules"
+       data-related="movi">
+        <img width="16" height="16" alt="Twitter bird logo blue 16x16" src="https://g.twimg.com/dev/documentation/image/Twitter_logo_blue_16.png">
+    </a>
+
+    <p>this test the javascript factory to create twitter web intents from code</p>
+    <div id="tweet-container"></div>
+    <script type="text/javascript">
+        twttr.ready(function (twttr) {
+            twttr.widgets.createShareButton(
+              "https:\/\/movi2.azurewebsites.net",
+              document.getElementById("tweet-container"),
+              {
+                  size: "large",
+                  via: "twitterdev",
+                  related: "twitterapi,twitter",
+                  text: "custom share text",
+                  hashtags: "example,demo"
+              }
+            );
+        });
+
+        //testing the event handler
+        twttr.ready(function (twttr) {
+            twttr.events.bind(
+              'tweet',
+              function (event) {
+                  alert("the user tweeted");
+              }
+            );
+            twttr.events.bind(
+              'rendered',
+              function (event) {
+                  //alert("element rendered");
+              }
+            );
+        });
+    </script>
+
+    <p>testing a direct link, here we can modify the style</p>
+    <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fdev.twitter.com%2Fweb%2Ftweet-button&via=twitterdev&related=twitterapi%2Ctwitter&hashtags=example%2Cdemo&text=custom%20share%20text" 
+       >
+        <img width="16" height="16" alt="Twitter bird logo blue 16x16" src="https://g.twimg.com/dev/documentation/image/Twitter_logo_blue_16.png">
+    </a>
+
+</body>
+</html>
